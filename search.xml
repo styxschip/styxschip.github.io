@@ -3,7 +3,26 @@
   <entry>
     <title>流水线乱序与除法定式</title>
     <url>/2021/01/03/%E9%80%86%E5%90%91/%E6%B5%81%E6%B0%B4%E7%BA%BF%E4%B9%B1%E5%BA%8F%E4%B8%8E%E9%99%A4%E6%B3%95%E5%AE%9A%E5%BC%8F/</url>
-    <content><![CDATA[<h2 id="流水线乱序"><a href="#流水线乱序" class="headerlink" title="流水线乱序"></a>流水线乱序</h2><p>为了提升效率，打乱原有的指令顺序，例如：</p>
+    <content><![CDATA[<ul>
+<li><a href="#流水线乱序">流水线乱序</a></li>
+<li><a href="#除法定式">除法定式</a><ul>
+<li><a href="#除数为正数且为2的幂">除数为正数，且为2的幂</a></li>
+<li><a href="#除数为正数且为非2的幂">除数为正数，且为非2的幂</a><ul>
+<li><a href="#情况1">情况1</a></li>
+<li><a href="#情况2">情况2</a></li>
+</ul>
+</li>
+<li><a href="#无符号除数且为非2的幂">无符号除数，且为非2的幂</a></li>
+<li><a href="#除数为负数且为2的幂">除数为负数，且为2的幂</a></li>
+<li><a href="#除数为负数且为非2的幂">除数为负数，且为非2的幂</a><ul>
+<li><a href="#情况1-1">情况1</a></li>
+<li><a href="#情况2-1">情况2</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="流水线乱序"><a href="#流水线乱序" class="headerlink" title="流水线乱序"></a>流水线乱序</h2><p>为了提升效率，打乱原有的指令顺序，例如：</p>
 <figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">cdq</span><br><span class="line">lea esi, [ecx + 445]</span><br><span class="line">idiv esi</span><br></pre></td></tr></table></figure>
 <p>本来<code>cdq</code>与<code>idiv</code>相关性更高，但是<code>cdq</code>与<code>idiv</code>都会用到 <code>edx</code>，所以插入与<code>edx</code>无关的<code>lea</code>指令，可以小幅提高效率。</p>
 <h2 id="除法定式"><a href="#除法定式" class="headerlink" title="除法定式"></a>除法定式</h2><p>除法的优化原则，就是将除法指令转为等效的乘法和移位。<br>简化版推导过程如下：<br>设 a 为被除数，c 为除数，q 为商，r 为余数：</p>
