@@ -1,16 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>Win7x64虚拟机</title>
-    <url>/2021/01/03/%E9%80%86%E5%90%91/Win7x64%E8%99%9A%E6%8B%9F%E6%9C%BA/</url>
-    <content><![CDATA[<p>为了方便调试样本，搞了一个Win7x64的虚拟机：<br><img src="/2021/01/03/%E9%80%86%E5%90%91/Win7x64%E8%99%9A%E6%8B%9F%E6%9C%BA/c915be9c-2f6b-420e-9c9e-f0c932a7fa5b.jpg" alt="c915be9c-2f6b-420e-9c9e-f0c932a7fa5b.jpg"><br>集成了一部分工具，大致如下：<br><img src="/2021/01/03/%E9%80%86%E5%90%91/Win7x64%E8%99%9A%E6%8B%9F%E6%9C%BA/6ccc5cff-f454-4c51-b77d-d5b8b76a4311.png" alt="6ccc5cff-f454-4c51-b77d-d5b8b76a4311.png"><br>虚拟机配置：<br><img src="/2021/01/03/%E9%80%86%E5%90%91/Win7x64%E8%99%9A%E6%8B%9F%E6%9C%BA/38bfab90-435f-4b65-b1fa-673f37896e9c.png" alt="38bfab90-435f-4b65-b1fa-673f37896e9c.png"><br>虚拟机大小在15G左右，下载后把ovf导入虚拟机就能用了；<br>常用工具单独打包了一份，1.9G左右，送给有缘人。</p>
-<p>下载地址：<br>链接: <a href="https://pan.baidu.com/s/1MQmUaDnPq6Hz672M_XkRLw">https://pan.baidu.com/s/1MQmUaDnPq6Hz672M_XkRLw</a><br>提取码: de8u</p>
-<p>文件MD5：<br>Win7x64模板ovf.z01<br>MD5: 1933A48B9AE7CADA94D48BDB8AB98B96</p>
-<p>Win7x64模板ovf.zip<br>MD5: A02E16219FE90F88DB414E101EDD45DF</p>
-<p>Win7x64组件和工具.zip<br>MD5: 06CDE3245F6199BCE14CFB122F2CAC42</p>
+    <title>流水线乱序与除法定式</title>
+    <url>/2021/01/03/%E9%80%86%E5%90%91/%E6%B5%81%E6%B0%B4%E7%BA%BF%E4%B9%B1%E5%BA%8F%E4%B8%8E%E9%99%A4%E6%B3%95%E5%AE%9A%E5%BC%8F/</url>
+    <content><![CDATA[<h2 id="流水线乱序"><a href="#流水线乱序" class="headerlink" title="流水线乱序"></a>流水线乱序</h2><p>为了提升效率，打乱原有的指令顺序，例如：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">cdq</span><br><span class="line">lea esi, [ecx + 445]</span><br><span class="line">idiv esi</span><br></pre></td></tr></table></figure>
+<p>本来<code>cdq</code>与<code>idiv</code>相关性更高，但是<code>cdq</code>与<code>idiv</code>都会用到 <code>edx</code>，所以插入与<code>edx</code>无关的<code>lea</code>指令，可以小幅提高效率。</p>
+<h2 id="除法定式"><a href="#除法定式" class="headerlink" title="除法定式"></a>除法定式</h2><p>除法的优化原则，就是将除法指令转为等效的乘法和移位。<br>简化版推导过程如下：<br>设 a 为被除数，c 为除数，q 为商，r 为余数：</p>
+<p>$\cfrac{a}{c} = q … r$</p>
+<p>除以 c 等于乘以 c 的倒数可得：</p>
+<p>${a} * \cfrac{1}{c}$</p>
+<p>c 的倒数，分子分母同时乘以2的n次幂，可得：</p>
+<p>${a} <em>\cfrac{1</em>2^n}{c*2^n}$</p>
+<p>等于</p>
+<p>${a} <em>\cfrac{2^n}{c}</em> \cfrac{1}{2^n}$</p>
+<p>其中$\cfrac{2^n}{c}$是在编译期间就能计算好的，称为 MagicNumber。对于 VC 系列编译器，对 n 的取值都是大于等于32，所以除法最后变成：</p>
+<p>$(a * MagicNumber) &gt;&gt; n$</p>
+<p>x86汇编中的乘法指令<code>imul</code>或者<code>mul</code>，都是用 eax存放低32位数据，edx 存放高32位数据，编译器生成除法指令时可能产生如下指令：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">sar edx, K</span><br></pre></td></tr></table></figure>
+<p>相当于乘法结果右移32位后再右移K位，带入到公式中：</p>
+<p>$(a * MagicNumber) &gt;&gt; (32+K)$</p>
+<p>又因为：</p>
+<p>$MagicNumber = \cfrac{2^n}{c}$</p>
+<p>所以，还原除数 c 的公式为：</p>
+<p>$c = \cfrac{2^n}{MagicNumber}$</p>
+<p>最终：<br>$c = \cfrac{2^{32 + K}}{MagicNumber}$</p>
+<p>总结，遇到除法，首先要想到公式</p>
+<p>$c = \cfrac{2^{32 + K}}{MagicNumber}$</p>
+<p>K 会出现在<code>sar edx, K</code>中。下面的各种情况，都是对 MagicNumber 做一些调整，例如检查符号位等等，但是思路是一样的，优先使用这个公式还原。</p>
+<h3 id="除数为正数，且为2的幂"><a href="#除数为正数，且为2的幂" class="headerlink" title="除数为正数，且为2的幂"></a>除数为正数，且为2的幂</h3><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">mov eax, dword ptr [ebp-4]</span><br><span class="line">cdq</span><br><span class="line">sub eax, edx ;或者 add edx, 7    add eax, edx</span><br><span class="line">sar eax, K</span><br></pre></td></tr></table></figure>
+<p><code>cdq</code>将符号扩展到 edx，<code>sub eax, edx</code>执行的操作是将 eax 减去高位 edx，是为了调整移位取整的问题，被除数为正数，edx 为0，等于没处理；被除数为负数，相当于加1；<code>add edx, 7    add eax, edx</code>这两句同理，目的都为解决被除数的符号问题，最后右移完成除法。<br>所以，最后还原为<code>eax / (2^K)</code>。</p>
+<h3 id="除数为正数，且为非2的幂"><a href="#除数为正数，且为非2的幂" class="headerlink" title="除数为正数，且为非2的幂"></a>除数为正数，且为非2的幂</h3><h4 id="情况1"><a href="#情况1" class="headerlink" title="情况1"></a>情况1</h4><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">mov eax, MagicNumber</span><br><span class="line">imul A</span><br><span class="line">sar edx, K</span><br><span class="line">mov reg, edx</span><br><span class="line">shr reg, 1Fh</span><br><span class="line">add edx, reg</span><br><span class="line">; 此后直接使用 edx 的值，eax 弃而不用</span><br></pre></td></tr></table></figure>
+<p>还原为<code>edx = A / &#123;  (2^ k+32  /  MagicNumber) &#125;</code>。</p>
+<h4 id="情况2"><a href="#情况2" class="headerlink" title="情况2"></a>情况2</h4><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">mov eax, MagicNumber (大于0x7FFFFFFFh)</span><br><span class="line">imul A</span><br><span class="line">add edx, reg</span><br><span class="line">sar edx, K</span><br><span class="line">mov reg, edx</span><br><span class="line">shr reg, 1Fh</span><br><span class="line">add edx, reg</span><br><span class="line">; 此后直接使用 edx 的值</span><br></pre></td></tr></table></figure>
+<p>还原为<code>edx = A / &#123;2^(K + 32)  /  MagicNumber &#125;</code></p>
+<h3 id="无符号除数，且为非2的幂"><a href="#无符号除数，且为非2的幂" class="headerlink" title="无符号除数，且为非2的幂"></a>无符号除数，且为非2的幂</h3><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">mov eax, MagicNumber</span><br><span class="line">mul A</span><br><span class="line">sub reg, edx</span><br><span class="line">shr reg, 1</span><br><span class="line">add reg, edx</span><br><span class="line">shr reg, K ;这句可能没有，如果没有，则 K 值为0，如果有就是 K + 1</span><br><span class="line">; 此后直接使用 reg 的值，eax 弃而不用</span><br></pre></td></tr></table></figure>
+<p>还原为<code>reg = (unsigned)A / &#123; (2^(k + 1 +32)  /  (2^32 + MagicNumber) &#125;</code>。</p>
+<h3 id="除数为负数，且为2的幂"><a href="#除数为负数，且为2的幂" class="headerlink" title="除数为负数，且为2的幂"></a>除数为负数，且为2的幂</h3><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">mov eax, dword ptr [ebp-4]</span><br><span class="line">cdq</span><br><span class="line">sub eax, edx ;或者 add edx, 7    add eax, edx</span><br><span class="line">sar eax, K</span><br><span class="line">neg eax</span><br></pre></td></tr></table></figure>
+<p>还原为<code>eax / &#123; -(2^K) &#125;</code>，参考“除数为正数，且为2的幂”的情况，将结果<code>neg</code>取反，表示除数为负。</p>
+<h3 id="除数为负数，且为非2的幂"><a href="#除数为负数，且为非2的幂" class="headerlink" title="除数为负数，且为非2的幂"></a>除数为负数，且为非2的幂</h3><p>两种情况，但是还原方式是一样的。</p>
+<h4 id="情况1-1"><a href="#情况1-1" class="headerlink" title="情况1"></a>情况1</h4><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">mov eax, MagicNumber (大于0x7FFFFFFFh)</span><br><span class="line">imul A</span><br><span class="line">sar edx, K</span><br><span class="line">mov reg, edx</span><br><span class="line">shr reg, 1Fh</span><br><span class="line">add edx, reg</span><br><span class="line">; 此后直接使用 edx 的值</span><br></pre></td></tr></table></figure>
+<p>还原为<code>edx = A / &#123; - (2^(k+32)  /  (2^32 - MagicNumber) ) &#125;</code>。</p>
+<h4 id="情况2-1"><a href="#情况2-1" class="headerlink" title="情况2"></a>情况2</h4><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">mov eax, MagicNumber (小于0x7FFFFFFFh)</span><br><span class="line">imul A</span><br><span class="line">sub edx, reg</span><br><span class="line">sar, edx, K</span><br><span class="line">mov reg, edx</span><br><span class="line">shr reg, 1Fh</span><br><span class="line">add edx, reg</span><br><span class="line">; 此后直接使用 edx 的值</span><br></pre></td></tr></table></figure>
+<p>还原为<code>edx = A / &#123; - (2^(k+32)  /  (2^32 - MagicNumber) ) &#125;</code>。</p>
 ]]></content>
-      <categories>
-        <category>逆向</category>
-      </categories>
   </entry>
 </search>
