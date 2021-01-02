@@ -275,7 +275,7 @@
       <span class="post-meta-item-text">发表于</span>
       
 
-      <time title="创建时间：2021-01-03 04:16:43 / 修改时间：04:24:54" itemprop="dateCreated datePublished" datetime="2021-01-03T04:16:43+08:00">2021-01-03</time>
+      <time title="创建时间：2021-01-03 04:16:43 / 修改时间：04:43:51" itemprop="dateCreated datePublished" datetime="2021-01-03T04:16:43+08:00">2021-01-03</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -303,11 +303,11 @@
 <h2 id="除法定式"><a href="#除法定式" class="headerlink" title="除法定式"></a>除法定式</h2><p>除法的优化原则，就是将除法指令转为等效的乘法和移位。<br>简化版推导过程如下：<br>设 a 为被除数，c 为除数，q 为商，r 为余数：</p>
 <p>$\cfrac{a}{c} = q … r$</p>
 <p>除以 c 等于乘以 c 的倒数可得：</p>
-<p>${a} * \cfrac{1}{c}$</p>
+<p>${a}*\cfrac{1}{c}$</p>
 <p>c 的倒数，分子分母同时乘以2的n次幂，可得：</p>
-<p>${a} <em>\cfrac{1</em>2^n}{c*2^n}$</p>
+<p>${a}<em>\cfrac{1</em>2^n}{c*2^n}$</p>
 <p>等于</p>
-<p>${a} <em>\cfrac{2^n}{c}</em> \cfrac{1}{2^n}$</p>
+<p>${a}<em>\cfrac{2^n}{c}</em>\cfrac{1}{2^n}$</p>
 <p>其中$\cfrac{2^n}{c}$是在编译期间就能计算好的，称为 MagicNumber。对于 VC 系列编译器，对 n 的取值都是大于等于32，所以除法最后变成：</p>
 <p>$(a * MagicNumber) &gt;&gt; n$</p>
 <p>x86汇编中的乘法指令<code>imul</code>或者<code>mul</code>，都是用 eax存放低32位数据，edx 存放高32位数据，编译器生成除法指令时可能产生如下指令：</p>
