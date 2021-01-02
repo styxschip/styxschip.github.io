@@ -44,5 +44,11 @@
 <h4 id="情况2-1"><a href="#情况2-1" class="headerlink" title="情况2"></a>情况2</h4><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">mov eax, MagicNumber (小于0x7FFFFFFFh)</span><br><span class="line">imul A</span><br><span class="line">sub edx, reg</span><br><span class="line">sar, edx, K</span><br><span class="line">mov reg, edx</span><br><span class="line">shr reg, 1Fh</span><br><span class="line">add edx, reg</span><br><span class="line">; 此后直接使用 edx 的值</span><br></pre></td></tr></table></figure>
 <p>还原为<code>edx = A / &#123; - (2^(k+32)  /  (2^32 - MagicNumber) ) &#125;</code>。</p>
 ]]></content>
+      <categories>
+        <category>逆向</category>
+      </categories>
+      <tags>
+        <tag>除法</tag>
+      </tags>
   </entry>
 </search>
