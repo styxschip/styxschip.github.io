@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.3.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/my-apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.ico">
+  <link rel="mask-icon" href="/images/my-logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.1/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.css">
+  <script src="//cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.js"></script>
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"mysock.net","root":"/","images":"/images","scheme":"Gemini","version":"8.2.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}};
+  </script>
+<meta name="description" content="准备工作OpenSSL 源码（使用的 1.1.1k 版本）下载地址：链接Perl for MS Windows 下载地址：链接VS2019，自己找吧nasm 下载地址：链接 安装编译环境">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Windows编译OpenSSL">
+<meta property="og:url" content="https://mysock.net/2021/04/26/%E5%BC%80%E5%8F%91/Windows%E7%BC%96%E8%AF%91OpenSSL/">
+<meta property="og:site_name" content="阿远的小窝">
+<meta property="og:description" content="准备工作OpenSSL 源码（使用的 1.1.1k 版本）下载地址：链接Perl for MS Windows 下载地址：链接VS2019，自己找吧nasm 下载地址：链接 安装编译环境">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://mysock.net/2021/04/26/%E5%BC%80%E5%8F%91/Windows%E7%BC%96%E8%AF%91OpenSSL/233e11b4fe98.png">
+<meta property="og:image" content="https://mysock.net/2021/04/26/%E5%BC%80%E5%8F%91/Windows%E7%BC%96%E8%AF%91OpenSSL/44a882998935.png">
+<meta property="og:image" content="https://mysock.net/2021/04/26/%E5%BC%80%E5%8F%91/Windows%E7%BC%96%E8%AF%91OpenSSL/895ab22345bb.png">
+<meta property="article:published_time" content="2021-04-26T13:17:00.000Z">
+<meta property="article:modified_time" content="2021-04-26T13:32:37.518Z">
+<meta property="article:author" content="schip">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://mysock.net/2021/04/26/%E5%BC%80%E5%8F%91/Windows%E7%BC%96%E8%AF%91OpenSSL/233e11b4fe98.png">
+
+
+<link rel="canonical" href="https://mysock.net/2021/04/26/%E5%BC%80%E5%8F%91/Windows%E7%BC%96%E8%AF%91OpenSSL/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+<title>Windows编译OpenSSL | 阿远的小窝</title>
+  
+
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">阿远的小窝</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%86%E5%A4%87%E5%B7%A5%E4%BD%9C"><span class="nav-text">准备工作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E7%BC%96%E8%AF%91%E7%8E%AF%E5%A2%83"><span class="nav-text">安装编译环境</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85VS2019"><span class="nav-text">安装VS2019</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85-Perl"><span class="nav-text">安装 Perl</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85-nasm"><span class="nav-text">安装 nasm</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E6%AD%A5%E9%AA%A4"><span class="nav-text">编译步骤</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AD%A5%E9%AA%A41-%E5%90%AF%E5%8A%A8%E7%BC%96%E8%AF%91%E7%8E%AF%E5%A2%83"><span class="nav-text">步骤1 启动编译环境</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AD%A5%E9%AA%A42-%E7%94%9F%E6%88%90%E7%BC%96%E8%AF%91%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6"><span class="nav-text">步骤2 生成编译配置文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AD%A5%E9%AA%A43-%E5%BC%80%E5%A7%8B%E7%BC%96%E8%AF%91"><span class="nav-text">步骤3 开始编译</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AD%A5%E9%AA%A44-%E6%B5%8B%E8%AF%95%E7%BC%96%E8%AF%91%E7%BB%93%E6%9E%9C"><span class="nav-text">步骤4 测试编译结果</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AD%A5%E9%AA%A45-%E5%AE%89%E8%A3%85"><span class="nav-text">步骤5 安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E5%A4%9A%E4%B8%AA%E7%89%88%E6%9C%AC"><span class="nav-text">编译多个版本</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-OpenSSL"><span class="nav-text">使用 OpenSSL</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E4%BB%A3%E7%A0%81"><span class="nav-text">测试代码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%AF%E8%83%BD%E9%81%87%E5%88%B0%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-text">可能遇到的问题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-text">参考资料</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="schip"
+      src="/images/my-avatar.png">
+  <p class="site-author-name" itemprop="name">schip</p>
+  <div class="site-description" itemprop="description">宁静致远 厚德载物 天道酬勤</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://mysock.net/2021/04/26/%E5%BC%80%E5%8F%91/Windows%E7%BC%96%E8%AF%91OpenSSL/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/my-avatar.png">
+      <meta itemprop="name" content="schip">
+      <meta itemprop="description" content="宁静致远 厚德载物 天道酬勤">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="阿远的小窝">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Windows编译OpenSSL
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2021-04-26 21:17:00 / 修改时间：21:32:37" itemprop="dateCreated datePublished" datetime="2021-04-26T21:17:00+08:00">2021-04-26</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E5%BC%80%E5%8F%91/" itemprop="url" rel="index"><span itemprop="name">开发</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><p>OpenSSL 源码（使用的 1.1.1k 版本）下载地址：<a target="_blank" rel="noopener" href="https://github.com/openssl/openssl/archive/refs/tags/OpenSSL_1_1_1k.zip">链接</a><br>Perl for MS Windows 下载地址：<a target="_blank" rel="noopener" href="https://strawberryperl.com/download/5.32.1.1/strawberry-perl-5.32.1.1-64bit.msi">链接</a><br>VS2019，自己找吧<br>nasm 下载地址：<a target="_blank" rel="noopener" href="https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win64/nasm-2.15.05-installer-x64.exe">链接</a></p>
+<h2 id="安装编译环境"><a href="#安装编译环境" class="headerlink" title="安装编译环境"></a>安装编译环境</h2><p>当前使用的Windows 10 x64版本，所以编译环境也都选择了x64的版本。32位的版本没做测试。</p>
+<h3 id="安装VS2019"><a href="#安装VS2019" class="headerlink" title="安装VS2019"></a>安装VS2019</h3><p>步骤略。</p>
+<h3 id="安装-Perl"><a href="#安装-Perl" class="headerlink" title="安装 Perl"></a>安装 Perl</h3><p>下载并运行安装包后，一路下一步，安装完成后，打开<code>cmd</code>，输入<code>perl -V</code>，确认是否安装成功。安装成功会输出下列信息：</p>
+<figure class="highlight cmd"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">Microsoft Windows [版本 <span class="number">10</span>.<span class="number">0</span>.<span class="number">19042</span>.<span class="number">928</span>]</span><br><span class="line">(c) Microsoft Corporation。保留所有权利。</span><br><span class="line"></span><br><span class="line"><span class="function">C:\<span class="title">Users</span>\<span class="title">Admin</span>&gt;<span class="title">perl</span> -<span class="title">V</span></span></span><br><span class="line"><span class="function"><span class="title">Summary</span> <span class="title">of</span> <span class="title">my</span> <span class="title">perl5</span> (<span class="title">revision</span> 5 <span class="title">version</span> 32 <span class="title">subversion</span> 1) <span class="title">configuration</span>:</span></span><br><span class="line"><span class="function"></span></span><br><span class="line"><span class="function">  <span class="title">Platform</span>:</span></span><br><span class="line"><span class="function">    <span class="title">osname</span>=<span class="title">MSWin32</span></span></span><br><span class="line"><span class="function">    <span class="title">osvers</span>=10.0.19042.746</span></span><br><span class="line"><span class="function">    <span class="title">archname</span>=<span class="title">MSWin32</span>-<span class="title">x64</span>-<span class="title">multi</span>-<span class="title">thread</span></span></span><br><span class="line"><span class="function">// 省略</span></span><br><span class="line"><span class="function">  <span class="title">Built</span> <span class="title">under</span> <span class="title">MSWin32</span></span></span><br><span class="line"><span class="function">  <span class="title">Compiled</span> <span class="title">at</span> <span class="title">Jan</span> 24 2021 15:05:42</span></span><br><span class="line"><span class="function">  @<span class="title">INC</span>:</span></span><br><span class="line"><span class="function">    <span class="title">C</span>:/<span class="title">Strawberry</span>/<span class="title">perl</span>/<span class="title">site</span>/<span class="title">lib</span></span></span><br><span class="line"><span class="function">    <span class="title">C</span>:/<span class="title">Strawberry</span>/<span class="title">perl</span>/<span class="title">vendor</span>/<span class="title">lib</span></span></span><br><span class="line"><span class="function">    <span class="title">C</span>:/<span class="title">Strawberry</span>/<span class="title">perl</span>/<span class="title">lib</span></span></span><br></pre></td></tr></table></figure>
+<p>如果没有成功，检查系统环境变量<code>path</code>是否存在下面的路径：</p>
+<figure class="highlight cmd"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">C:\<span class="title">Strawberry</span>\<span class="title">c</span>\<span class="title">bin</span>;</span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Strawberry</span>\<span class="title">perl</span>\<span class="title">site</span>\<span class="title">bin</span>;</span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Strawberry</span>\<span class="title">perl</span>\<span class="title">bin</span>;</span></span><br></pre></td></tr></table></figure>
+<p>根据真实环境补全 perl 的所在目录。</p>
+<h3 id="安装-nasm"><a href="#安装-nasm" class="headerlink" title="安装 nasm"></a>安装 nasm</h3><p>下载并运行安装包后，一路下一步，安装完成后，打开<code>cmd</code>，输入<code>nasm -v</code>，确认是否安装成功。安装成功会输出下列信息：</p>
+<figure class="highlight cmd"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Microsoft Windows [版本 <span class="number">10</span>.<span class="number">0</span>.<span class="number">19042</span>.<span class="number">928</span>]</span><br><span class="line">(c) Microsoft Corporation。保留所有权利。</span><br><span class="line"></span><br><span class="line"><span class="function">C:\<span class="title">Users</span>\<span class="title">Admin</span>&gt;<span class="title">nasm</span> -<span class="title">v</span></span></span><br><span class="line"><span class="function"><span class="title">NASM</span> <span class="title">version</span> 2.15.05 <span class="title">compiled</span> <span class="title">on</span> <span class="title">Aug</span> 28 2020</span></span><br></pre></td></tr></table></figure>
+<p>如果没有成功，检查系统环境变量<code>path</code>是否存在下面的路径：</p>
+<figure class="highlight cmd"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">C:\<span class="title">Program</span> <span class="title">Files</span>\<span class="title">NASM</span></span></span><br></pre></td></tr></table></figure>
+<p>根据真实环境补全 nasm 的所在目录。</p>
+<h2 id="编译步骤"><a href="#编译步骤" class="headerlink" title="编译步骤"></a>编译步骤</h2><p>这里以编译x64版本的OpenSSL为例。</p>
+<h3 id="步骤1-启动编译环境"><a href="#步骤1-启动编译环境" class="headerlink" title="步骤1 启动编译环境"></a>步骤1 启动编译环境</h3><p>在开始菜单中找到<code>Visual Studio 2019</code>目录中的<code>x86_x64 Cross Tools Command Prompt for VS 2019</code>，<strong><em>以管理员身份运行</em></strong>；<br><code>cd</code>进入<code>OpenSSL</code>源码的根目录：</p>
+<figure class="highlight cmd"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">**********************************************************************</span><br><span class="line">** Visual Studio <span class="number">2019</span> Developer Command Prompt v16.<span class="number">9</span>.<span class="number">4</span></span><br><span class="line">** Copyright (c) <span class="number">2021</span> Microsoft Corporation</span><br><span class="line">**********************************************************************</span><br><span class="line">[vcvarsall.bat] Environment initialized <span class="keyword">for</span>: &#x27;x86_x64&#x27;</span><br><span class="line"></span><br><span class="line"><span class="function">C:\<span class="title">Windows</span>\<span class="title">System32</span>&gt;<span class="title">cd</span> <span class="title">C</span>:\<span class="title">Users</span>\<span class="title">Admin</span>\<span class="title">source</span>\<span class="title">openssl</span>-<span class="title">OpenSSL_1_1_1k</span></span></span><br><span class="line"><span class="function"></span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Users</span>\<span class="title">Admin</span>\<span class="title">source</span>\<span class="title">openssl</span>-<span class="title">OpenSSL_1_1_1k</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h3 id="步骤2-生成编译配置文件"><a href="#步骤2-生成编译配置文件" class="headerlink" title="步骤2 生成编译配置文件"></a>步骤2 生成编译配置文件</h3><p>运行命令<code>perl Configure VC-WIN64A</code>，生成编译配置文件，成功后输出信息如下：</p>
+<figure class="highlight cmd"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">C:\<span class="title">Users</span>\<span class="title">Admin</span>\<span class="title">source</span>\<span class="title">openssl</span>-<span class="title">OpenSSL_1_1_1k</span>&gt;<span class="title">perl</span> <span class="title">Configure</span> <span class="title">VC</span>-<span class="title">WIN64A</span></span></span><br><span class="line"><span class="function"><span class="title">Configuring</span> <span class="title">OpenSSL</span> <span class="title">version</span> 1.1.1<span class="title">k</span> (0<span class="title">x101010bfL</span>) <span class="title">for</span> <span class="title">VC</span>-<span class="title">WIN64A</span></span></span><br><span class="line"><span class="function"><span class="title">Using</span> <span class="title">os</span>-<span class="title">specific</span> <span class="title">seed</span> <span class="title">configuration</span></span></span><br><span class="line"><span class="function"><span class="title">Creating</span> <span class="title">configdata.pm</span></span></span><br><span class="line"><span class="function"><span class="title">Creating</span> <span class="title">makefile</span></span></span><br><span class="line"><span class="function"></span></span><br><span class="line"><span class="function">**********************************************************************</span></span><br><span class="line"><span class="function">***                                                                ***</span></span><br><span class="line"><span class="function">***   <span class="title">OpenSSL</span> <span class="title">has</span> <span class="title">been</span> <span class="title">successfully</span> <span class="title">configured</span>                     ***</span></span><br><span class="line"><span class="function">***                                                                ***</span></span><br><span class="line"><span class="function">***   <span class="title">If</span> <span class="title">you</span> <span class="title">encounter</span> <span class="title">a</span> <span class="title">problem</span> <span class="title">while</span> <span class="title">building</span>, <span class="title">please</span> <span class="title">open</span> <span class="title">an</span>    ***</span></span><br><span class="line"><span class="function">***   <span class="title">issue</span> <span class="title">on</span> <span class="title">GitHub</span> &lt;<span class="title">https</span>://<span class="title">github.com</span>/<span class="title">openssl</span>/<span class="title">openssl</span>/<span class="title">issues</span>&gt;  ***</span></span><br><span class="line"><span class="function">***   <span class="title">and</span> <span class="title">include</span> <span class="title">the</span> <span class="title">output</span> <span class="title">from</span> <span class="title">the</span> <span class="title">following</span> <span class="title">command</span>:           ***</span></span><br><span class="line"><span class="function">***                                                                ***</span></span><br><span class="line"><span class="function">***       <span class="title">perl</span> <span class="title">configdata.pm</span> --<span class="title">dump</span>                                ***</span></span><br><span class="line"><span class="function">***                                                                ***</span></span><br><span class="line"><span class="function">***   (<span class="title">If</span> <span class="title">you</span> <span class="title">are</span> <span class="title">new</span> <span class="title">to</span> <span class="title">OpenSSL</span>, <span class="title">you</span> <span class="title">might</span> <span class="title">want</span> <span class="title">to</span> <span class="title">consult</span> <span class="title">the</span>    ***</span></span><br><span class="line"><span class="function">***   &#x27;<span class="title">Troubleshooting</span>&#x27; <span class="title">section</span> <span class="title">in</span> <span class="title">the</span> <span class="title">INSTALL</span> <span class="title">file</span> <span class="title">first</span>)         ***</span></span><br><span class="line"><span class="function">***                                                                ***</span></span><br><span class="line"><span class="function">**********************************************************************</span></span><br><span class="line"><span class="function"></span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Users</span>\<span class="title">Admin</span>\<span class="title">source</span>\<span class="title">openssl</span>-<span class="title">OpenSSL_1_1_1k</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h3 id="步骤3-开始编译"><a href="#步骤3-开始编译" class="headerlink" title="步骤3 开始编译"></a>步骤3 开始编译</h3><p>运行命令<code>nmake</code>，开始编译，编译时间大约10分钟，成功后输出信息如下：</p>
+<figure class="highlight cmd"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">        cl  /Zi /Fdapp.pdb /Gs0 /GF /Gy /<span class="built_in">MD</span> /W3 /wd4090 /nologo /O2 /I &quot;include&quot; -D&quot;OPENSSL_SYS_WIN32&quot; -D&quot;WIN32_LEAN_AND_MEAN&quot; -D&quot;UNICODE&quot; -D&quot;_UNICODE&quot; -D&quot;_CRT_SECURE_NO_DEPRECATE&quot; -D&quot;_WINSOCK_DEPRECATED_NO_WARNINGS&quot; -D&quot;OPENSSL_USE_APPLINK&quot; -D&quot;NDEBUG&quot;  /Zs /showIncludes &quot;test\x509_time_test.c&quot; <span class="number">2</span>&gt;&amp;<span class="number">1</span> &gt; test\x509_time_test.d</span><br><span class="line">        <span class="keyword">IF</span> <span class="keyword">EXIST</span> test\x509_time_test.exe.manifest <span class="built_in">DEL</span> /F /Q test\x509_time_test.exe.manifest</span><br><span class="line">        link /nologo /debug /subsystem:console /opt:ref  /nologo /debug /out:test\x509_time_test.exe @C:\Users\Admin\AppData\Local\Temp\nmC906.tmp</span><br><span class="line">        <span class="keyword">IF</span> <span class="keyword">EXIST</span> test\x509_time_test.exe.manifest  mt -nologo -manifest test\x509_time_test.exe.manifest -outputresource:test\x509_time_test.exe</span><br><span class="line">        cl  /Zi /Fdapp.pdb /Gs0 /GF /Gy /<span class="built_in">MD</span> /W3 /wd4090 /nologo /O2 /I &quot;include&quot; -D&quot;OPENSSL_SYS_WIN32&quot; -D&quot;WIN32_LEAN_AND_MEAN&quot; -D&quot;UNICODE&quot; -D&quot;_UNICODE&quot; -D&quot;_CRT_SECURE_NO_DEPRECATE&quot; -D&quot;_WINSOCK_DEPRECATED_NO_WARNINGS&quot; -D&quot;OPENSSL_USE_APPLINK&quot; -D&quot;NDEBUG&quot;  -c /Fotest\x509aux.obj &quot;test\x509aux.c&quot;</span><br><span class="line">x509aux.c</span><br><span class="line">        cl  /Zi /Fdapp.pdb /Gs0 /GF /Gy /<span class="built_in">MD</span> /W3 /wd4090 /nologo /O2 /I &quot;include&quot; -D&quot;OPENSSL_SYS_WIN32&quot; -D&quot;WIN32_LEAN_AND_MEAN&quot; -D&quot;UNICODE&quot; -D&quot;_UNICODE&quot; -D&quot;_CRT_SECURE_NO_DEPRECATE&quot; -D&quot;_WINSOCK_DEPRECATED_NO_WARNINGS&quot; -D&quot;OPENSSL_USE_APPLINK&quot; -D&quot;NDEBUG&quot;  /Zs /showIncludes &quot;test\x509aux.c&quot; <span class="number">2</span>&gt;&amp;<span class="number">1</span> &gt; test\x509aux.d</span><br><span class="line">        <span class="keyword">IF</span> <span class="keyword">EXIST</span> test\x509aux.exe.manifest <span class="built_in">DEL</span> /F /Q test\x509aux.exe.manifest</span><br><span class="line">        link /nologo /debug /subsystem:console /opt:ref  /nologo /debug /out:test\x509aux.exe @C:\Users\Admin\AppData\Local\Temp\nmCACC.tmp</span><br><span class="line">        <span class="keyword">IF</span> <span class="keyword">EXIST</span> test\x509aux.exe.manifest  mt -nologo -manifest test\x509aux.exe.manifest -outputresource:test\x509aux.exe</span><br><span class="line">        &quot;C:\Strawberry\perl\bin\perl.exe&quot; &quot;-I.&quot; -Mconfigdata &quot;util\dofile.pl&quot;  &quot;-omakefile&quot; &quot;apps\CA.pl.<span class="keyword">in</span>&quot; &gt; &quot;apps\CA.pl&quot;</span><br><span class="line">        &quot;C:\Strawberry\perl\bin\perl.exe&quot; &quot;-I.&quot; -Mconfigdata &quot;util\dofile.pl&quot;  &quot;-omakefile&quot; &quot;apps\tsget.<span class="keyword">in</span>&quot; &gt; &quot;apps\tsget.pl&quot;</span><br><span class="line">        &quot;C:\Strawberry\perl\bin\perl.exe&quot; &quot;-I.&quot; -Mconfigdata &quot;util\dofile.pl&quot;  &quot;-omakefile&quot; &quot;tools\c_rehash.<span class="keyword">in</span>&quot; &gt; &quot;tools\c_rehash.pl&quot;</span><br><span class="line"></span><br><span class="line"><span class="function">C:\<span class="title">Users</span>\<span class="title">Admin</span>\<span class="title">source</span>\<span class="title">openssl</span>-<span class="title">OpenSSL_1_1_1k</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h3 id="步骤4-测试编译结果"><a href="#步骤4-测试编译结果" class="headerlink" title="步骤4 测试编译结果"></a>步骤4 测试编译结果</h3><p>运行命令<code>nmake test</code>，测试编译结果，耗时大约10分钟，成功后输出信息如下：</p>
+<figure class="highlight cmd"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">test\recipes\<span class="number">99</span>-test_ecstress.t ................. ok</span><br><span class="line">test\recipes\<span class="number">99</span>-test_fuzz.t ..................... ok</span><br><span class="line">All tests successful.</span><br><span class="line">Files=<span class="number">158</span>, Tests=<span class="number">2545</span>, <span class="number">451</span> wallclock secs ( <span class="number">1</span>.<span class="number">86</span> usr +  <span class="number">0</span>.<span class="number">50</span> sys =  <span class="number">2</span>.<span class="number">36</span> CPU)</span><br><span class="line"><span class="function">Result: <span class="title">PASS</span></span></span><br><span class="line"><span class="function"></span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Users</span>\<span class="title">Admin</span>\<span class="title">source</span>\<span class="title">openssl</span>-<span class="title">OpenSSL_1_1_1k</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h3 id="步骤5-安装"><a href="#步骤5-安装" class="headerlink" title="步骤5 安装"></a>步骤5 安装</h3><p>运行命令<code>nmake install</code>，安装文件，<code>x64</code>版本默认安装到<code>C:\Program Files\OpenSSL</code>，<code>x86</code>版本默认安装到<code>C:\Program Files (x86)\OpenSSL</code>，耗时大约3分钟，成功后输出信息如下：</p>
+<figure class="highlight cmd"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">C:\<span class="title">Program</span> <span class="title">Files</span>\<span class="title">OpenSSL</span>\<span class="title">html</span>\<span class="title">man7</span>\<span class="title">bio.html</span></span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Program</span> <span class="title">Files</span>\<span class="title">OpenSSL</span>\<span class="title">html</span>\<span class="title">man7</span>\<span class="title">crypto.html</span></span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Program</span> <span class="title">Files</span>\<span class="title">OpenSSL</span>\<span class="title">html</span>\<span class="title">man7</span>\<span class="title">ct.html</span></span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Program</span> <span class="title">Files</span>\<span class="title">OpenSSL</span>\<span class="title">html</span>\<span class="title">man7</span>\<span class="title">des_modes.html</span></span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Program</span> <span class="title">Files</span>\<span class="title">OpenSSL</span>\<span class="title">html</span>\<span class="title">man7</span>\<span class="title">Ed25519.html</span></span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Program</span> <span class="title">Files</span>\<span class="title">OpenSSL</span>\<span class="title">html</span>\<span class="title">man7</span>\<span class="title">Ed448.html</span> -&gt; <span class="title">C</span>:\<span class="title">Program</span> <span class="title">Files</span>\<span class="title">OpenSSL</span>\<span class="title">html</span>\<span class="title">man7</span>\<span class="title">Ed25519.html</span></span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Program</span> <span class="title">Files</span>\<span class="title">OpenSSL</span>\<span class="title">html</span>\<span class="title">man7</span>\<span class="title">evp.html</span></span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Program</span> <span class="title">Files</span>\<span class="title">OpenSSL</span>\<span class="title">html</span>\<span class="title">man7</span>\<span class="title">ossl_store</span>-<span class="title">file.html</span></span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Program</span> <span class="title">Files</span>\<span class="title">OpenSSL</span>\<span class="title">html</span>\<span class="title">man7</span>\<span class="title">ossl_store.html</span></span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Program</span> <span class="title">Files</span>\<span class="title">OpenSSL</span>\<span class="title">html</span>\<span class="title">man7</span>\<span class="title">passphrase</span>-<span class="title">encoding.html</span></span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Program</span> <span class="title">Files</span>\<span class="title">OpenSSL</span>\<span class="title">html</span>\<span class="title">man7</span>\<span class="title">proxy</span>-<span class="title">certificates.html</span></span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Program</span> <span class="title">Files</span>\<span class="title">OpenSSL</span>\<span class="title">html</span>\<span class="title">man7</span>\<span class="title">RAND.html</span></span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Program</span> <span class="title">Files</span>\<span class="title">OpenSSL</span>\<span class="title">html</span>\<span class="title">man7</span>\<span class="title">RAND_DRBG.html</span></span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Program</span> <span class="title">Files</span>\<span class="title">OpenSSL</span>\<span class="title">html</span>\<span class="title">man7</span>\<span class="title">RSA</span>-<span class="title">PSS.html</span></span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Program</span> <span class="title">Files</span>\<span class="title">OpenSSL</span>\<span class="title">html</span>\<span class="title">man7</span>\<span class="title">scrypt.html</span></span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Program</span> <span class="title">Files</span>\<span class="title">OpenSSL</span>\<span class="title">html</span>\<span class="title">man7</span>\<span class="title">SM2.html</span></span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Program</span> <span class="title">Files</span>\<span class="title">OpenSSL</span>\<span class="title">html</span>\<span class="title">man7</span>\<span class="title">ssl.html</span></span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Program</span> <span class="title">Files</span>\<span class="title">OpenSSL</span>\<span class="title">html</span>\<span class="title">man7</span>\<span class="title">X25519.html</span></span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Program</span> <span class="title">Files</span>\<span class="title">OpenSSL</span>\<span class="title">html</span>\<span class="title">man7</span>\<span class="title">X448.html</span> -&gt; <span class="title">C</span>:\<span class="title">Program</span> <span class="title">Files</span>\<span class="title">OpenSSL</span>\<span class="title">html</span>\<span class="title">man7</span>\<span class="title">X25519.html</span></span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Program</span> <span class="title">Files</span>\<span class="title">OpenSSL</span>\<span class="title">html</span>\<span class="title">man7</span>\<span class="title">x509.html</span></span></span><br><span class="line"><span class="function"></span></span><br><span class="line"><span class="function"><span class="title">C</span>:\<span class="title">Users</span>\<span class="title">Admin</span>\<span class="title">source</span>\<span class="title">openssl</span>-<span class="title">OpenSSL_1_1_1k</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h3 id="编译多个版本"><a href="#编译多个版本" class="headerlink" title="编译多个版本"></a>编译多个版本</h3><p>如果还需要编译其它版本，例如要编译<code>x86</code>版本，需要<strong><em>以管理员身份运行</em></strong> x86 版本的VS2019的命令行工具<code>x86 Native Tools Command Prompt for VS 2019</code>，进入源码目录后，先执行清理命令，然后修改配置信息：</p>
+<figure class="highlight cmd"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">nmake clean</span><br><span class="line">perl Configure VC-WIN32</span><br></pre></td></tr></table></figure>
+<p>接下来从<code>步骤3 开始编译</code>再来一遍。</p>
+<h2 id="使用-OpenSSL"><a href="#使用-OpenSSL" class="headerlink" title="使用 OpenSSL"></a>使用 OpenSSL</h2><h3 id="测试代码"><a href="#测试代码" class="headerlink" title="测试代码"></a>测试代码</h3><p>以计算MD5为例。<br>将安装后的<code>C:\Program Files\OpenSSL\include</code>和<code>C:\Program Files\OpenSSL\lib</code>添加到工程中：<br><img src="/2021/04/26/%E5%BC%80%E5%8F%91/Windows%E7%BC%96%E8%AF%91OpenSSL/233e11b4fe98.png" alt="233e11b4fe98.png"></p>
+<p>代码中要根据实际情况使用头文件<code>.h</code>、静态库<code>.lib</code>、动态库<code>.dll</code>，这里只用到了<code>#include &lt;openssl\md5.h&gt;</code>、<code>#pragma comment(lib, &quot;libcrypto.lib&quot;)</code>、<code>libcrypto-1_1-x64.dll</code>。<br>测试代码如下：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;openssl\md5.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> comment(lib, <span class="meta-string">&quot;libcrypto.lib&quot;</span>)</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">char</span> szBuf[<span class="number">6</span>] = &#123;<span class="string">&#x27;1&#x27;</span>, <span class="string">&#x27;2&#x27;</span>, <span class="string">&#x27;3&#x27;</span>, <span class="string">&#x27;4&#x27;</span>, <span class="string">&#x27;5&#x27;</span>, <span class="string">&#x27;6&#x27;</span>&#125;;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">char</span> md[MD5_DIGEST_LENGTH] = &#123;<span class="number">0</span>&#125;;</span><br><span class="line">    MD5(szBuf, <span class="keyword">sizeof</span>(szBuf), md);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; MD5_DIGEST_LENGTH; i++) </span><br><span class="line">    &#123;</span><br><span class="line">        printf_s(<span class="string">&quot;%02x&quot;</span>, md[i]);</span><br><span class="line">    &#125;</span><br><span class="line">    printf_s(<span class="string">&quot;\n&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>输出结果<code>e10adc3949ba59abbe56e057f20f883e</code>。</p>
+<h3 id="可能遇到的问题"><a href="#可能遇到的问题" class="headerlink" title="可能遇到的问题"></a>可能遇到的问题</h3><ul>
+<li>找不到dll</li>
+</ul>
+<p><img src="/2021/04/26/%E5%BC%80%E5%8F%91/Windows%E7%BC%96%E8%AF%91OpenSSL/44a882998935.png" alt="44a882998935.png"></p>
+<p>检查对应版本的dll是否放到程序目录或者系统目录。</p>
+<ul>
+<li>编译报错<code>找不到标识符</code>或者<code>未声明的标识符</code></li>
+</ul>
+<p>报错详情：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">已启动生成…</span><br><span class="line"><span class="number">1</span>&gt;------ 已启动生成: 项目: test_openssl, 配置: Debug x64 ------</span><br><span class="line"><span class="number">1</span>&gt;test_openssl.cpp</span><br><span class="line"><span class="number">1</span>&gt;C:\Users\Admin\source\test_openssl\test_openssl.cpp(<span class="number">6</span>,<span class="number">22</span>): error C2065: “MD5_DIGEST_LENGTH”: 未声明的标识符</span><br><span class="line"><span class="number">1</span>&gt;C:\Users\Admin\source\test_openssl\test_openssl.cpp(<span class="number">7</span>,<span class="number">5</span>): error C3861: “MD5”: 找不到标识符</span><br><span class="line"><span class="number">1</span>&gt;C:\Users\Admin\source\test_openssl\test_openssl.cpp(<span class="number">9</span>,<span class="number">25</span>): error C2065: “MD5_DIGEST_LENGTH”: 未声明的标识符</span><br><span class="line"><span class="number">1</span>&gt;已完成生成项目“test_openssl.vcxproj”的操作 - 失败。</span><br><span class="line">========== 生成: 成功 <span class="number">0</span> 个，失败 <span class="number">1</span> 个，最新 <span class="number">0</span> 个，跳过 <span class="number">0</span> 个 ==========</span><br></pre></td></tr></table></figure>
+<p>检查代码是否引入头文件<code>#include &lt;openssl\md5.h&gt;</code>。</p>
+<ul>
+<li>无法解析的外部符号<code>xxx</code></li>
+</ul>
+<p>报错详情：</p>
+<figure class="highlight cmd"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">已启动生成…</span><br><span class="line"><span class="number">1</span>&gt;------ 已启动生成: 项目: test_openssl, 配置: Debug x64 ------</span><br><span class="line"><span class="number">1</span>&gt;test_openssl.cpp</span><br><span class="line"><span class="number">1</span>&gt;test_openssl.obj : error LNK2019: 无法解析的外部符号 MD5，函数 main 中引用了该符号</span><br><span class="line"><span class="number">1</span>&gt;C:\Users\Admin\source\test_openssl\x64\Debug\test_openssl.exe : fatal error LNK1120: <span class="number">1</span> 个无法解析的外部命令</span><br><span class="line"><span class="number">1</span>&gt;已完成生成项目“test_openssl.vcxproj”的操作 - 失败。</span><br><span class="line">========== 生成: 成功 <span class="number">0</span> 个，失败 <span class="number">1</span> 个，最新 <span class="number">0</span> 个，跳过 <span class="number">0</span> 个 ==========</span><br></pre></td></tr></table></figure>
+<p>检查代码是否有<code>#pragma comment(lib, &quot;libcrypto.lib&quot;)</code>。</p>
+<ul>
+<li><p>无法打开包括文件<code>xxx.h</code><br>检查工程属性页的<code>配置属性 -- VC++ 目录 -- 包含目录</code>是否添加<code>C:\Program Files\OpenSSL\include</code>。</p>
+</li>
+<li><p>无法打开文件<code>xxx.lib</code><br>检查工程属性页的<code>配置属性 -- VC++ 目录 -- 库目录</code>是否添加<code>C:\Program Files\OpenSSL\lib</code>。</p>
+</li>
+<li><p>无法解析的外部符号<code>_函数名@数字</code></p>
+</li>
+</ul>
+<figure class="highlight cmd"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">已启动生成…</span><br><span class="line"><span class="number">1</span>&gt;------ 已启动生成: 项目: test_openssl, 配置: Debug Win32 ------</span><br><span class="line"><span class="number">1</span>&gt;test_openssl.cpp</span><br><span class="line"><span class="number">1</span>&gt;test_openssl.obj : error LNK2019: 无法解析的外部符号 _MD5@<span class="number">12</span>，函数 _main 中引用了该符号</span><br><span class="line"><span class="number">1</span>&gt;C:\Users\Admin\source\test_openssl\Debug\test_openssl.exe : fatal error LNK1120: <span class="number">1</span> 个无法解析的外部命令</span><br><span class="line"><span class="number">1</span>&gt;已完成生成项目“test_openssl.vcxproj”的操作 - 失败。</span><br><span class="line">========== 生成: 成功 <span class="number">0</span> 个，失败 <span class="number">1</span> 个，最新 <span class="number">0</span> 个，跳过 <span class="number">0</span> 个 ==========</span><br></pre></td></tr></table></figure>
+<p>这个问题只出现在32位环境，和上面的<code>无法解析的外部符号xxx</code>报错信息很像，但是函数名前后多了<code>_</code>和<code>@数字</code>字样，原因是代码工程使用了标准调用约定，<br>使用<code>__stdcall</code>，函数在obj 中显示为<code>_funname@参数总字节数</code>，用于函数本身平衡栈空间。<br>检查工程属性页的<code>配置属性 -- C/C++  --  高级  --  调用约定</code>，是否为C调用约定<code>_cdecl</code>，OpenSSL 默认使用C调用约定：<br><img src="/2021/04/26/%E5%BC%80%E5%8F%91/Windows%E7%BC%96%E8%AF%91OpenSSL/895ab22345bb.png" alt="895ab22345bb.png"></p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ol>
+<li>OpenSSL的 <a target="_blank" rel="noopener" href="https://github.com/openssl/openssl/blob/master/NOTES-WINDOWS.md">README.md</a></li>
+<li>OpenSSL源码目录中的<code>INSTALL</code>文件</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/01/03/%E9%80%86%E5%90%91/Win7x64%E8%99%9A%E6%8B%9F%E6%9C%BA/" rel="prev" title="Win7x64虚拟机">
+                  <i class="fa fa-chevron-left"></i> Win7x64虚拟机
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">schip</span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+  <script>
+    NProgress.configure({
+      showSpinner: true
+    });
+    NProgress.start();
+    document.addEventListener('readystatechange', () => {
+      if (document.readyState === 'interactive') {
+        NProgress.inc(0.8);
+      }
+      if (document.readyState === 'complete') {
+        NProgress.done();
+      }
+    });
+    document.addEventListener('pjax:send', () => {
+      NProgress.start();
+    });
+    document.addEventListener('pjax:success', () => {
+      NProgress.done();
+    });
+  </script>
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  <script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'none'
+      },
+      options: {
+        renderActions: {
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              const target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    const script = document.createElement('script');
+    script.src = '//cdn.jsdelivr.net/npm/mathjax@3.1.2/es5/tex-mml-chtml.js';
+    script.defer = true;
+    document.head.appendChild(script);
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.typesetClear();
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+
+
+</body>
+</html>
