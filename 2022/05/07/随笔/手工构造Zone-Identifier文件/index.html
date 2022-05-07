@@ -25,20 +25,22 @@
     var NexT = window.NexT || {};
     var CONFIG = {"hostname":"mysock.net","root":"/","images":"/images","scheme":"Gemini","version":"8.2.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}};
   </script>
-<meta name="description" content="宁静致远 厚德载物 天道酬勤">
-<meta property="og:type" content="website">
-<meta property="og:title" content="分类">
-<meta property="og:url" content="https://mysock.net/categories/">
+<meta name="description" content="Zone.Identifier文件是什么 从网上下载的文件始终可能包已含损坏数据或恶意软件。 因此，网络浏览器在NTFS ADS（备用数据流）区域中存储有关下载文件位置的信息。 该信息称为“zone.identifier（区域标识符信息）”，由安全程序使用。  （摘自https:&#x2F;&#x2F;www.bandisoft.com&#x2F;bandizip&#x2F;help&#x2F;zone-identifier&#x2F;）">
+<meta property="og:type" content="article">
+<meta property="og:title" content="手工构造Zone.Identifier文件">
+<meta property="og:url" content="https://mysock.net/2022/05/07/%E9%9A%8F%E7%AC%94/%E6%89%8B%E5%B7%A5%E6%9E%84%E9%80%A0Zone-Identifier%E6%96%87%E4%BB%B6/">
 <meta property="og:site_name" content="阿远的小窝">
-<meta property="og:description" content="宁静致远 厚德载物 天道酬勤">
+<meta property="og:description" content="Zone.Identifier文件是什么 从网上下载的文件始终可能包已含损坏数据或恶意软件。 因此，网络浏览器在NTFS ADS（备用数据流）区域中存储有关下载文件位置的信息。 该信息称为“zone.identifier（区域标识符信息）”，由安全程序使用。  （摘自https:&#x2F;&#x2F;www.bandisoft.com&#x2F;bandizip&#x2F;help&#x2F;zone-identifier&#x2F;）">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2021-01-02T12:38:23.000Z">
-<meta property="article:modified_time" content="2021-01-02T15:31:31.193Z">
+<meta property="og:image" content="https://mysock.net/2022/05/07/%E9%9A%8F%E7%AC%94/%E6%89%8B%E5%B7%A5%E6%9E%84%E9%80%A0Zone-Identifier%E6%96%87%E4%BB%B6/pqDx4PF8d4VnuqjokFSJM09yXy2rWzMeQWStyo9fS6k.png">
+<meta property="article:published_time" content="2022-05-07T05:37:56.000Z">
+<meta property="article:modified_time" content="2022-05-07T07:04:50.239Z">
 <meta property="article:author" content="schip">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://mysock.net/2022/05/07/%E9%9A%8F%E7%AC%94/%E6%89%8B%E5%B7%A5%E6%9E%84%E9%80%A0Zone-Identifier%E6%96%87%E4%BB%B6/pqDx4PF8d4VnuqjokFSJM09yXy2rWzMeQWStyo9fS6k.png">
 
 
-<link rel="canonical" href="https://mysock.net/categories/">
+<link rel="canonical" href="https://mysock.net/2022/05/07/%E9%9A%8F%E7%AC%94/%E6%89%8B%E5%B7%A5%E6%9E%84%E9%80%A0Zone-Identifier%E6%96%87%E4%BB%B6/">
 
 
 <script class="page-configurations">
@@ -46,12 +48,11 @@
   CONFIG.page = {
     sidebar: "",
     isHome : false,
-    isPost : false,
+    isPost : true,
     lang   : 'zh-CN'
   };
 </script>
-<title>分类 | 阿远的小窝
-</title>
+<title>手工构造Zone.Identifier文件 | 阿远的小窝</title>
   
 
 
@@ -175,7 +176,7 @@
 
   <aside class="sidebar">
 
-    <div class="sidebar-inner sidebar-overview-active">
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
       <ul class="sidebar-nav">
         <li class="sidebar-nav-toc">
           文章目录
@@ -188,6 +189,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Zone-Identifier%E6%96%87%E4%BB%B6%E6%98%AF%E4%BB%80%E4%B9%88"><span class="nav-text">Zone.Identifier文件是什么</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%8B%E5%B7%A5%E6%9E%84%E9%80%A0Zone-Identifier%E7%9A%84%E6%AD%A5%E9%AA%A4"><span class="nav-text">手工构造Zone.Identifier的步骤</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -245,43 +247,116 @@
 </noscript>
 
 
-    <div class="main-inner page posts-expand">
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
   
   
 
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://mysock.net/2022/05/07/%E9%9A%8F%E7%AC%94/%E6%89%8B%E5%B7%A5%E6%9E%84%E9%80%A0Zone-Identifier%E6%96%87%E4%BB%B6/">
 
-    
-    
-    
-    <div class="post-block" lang="zh-CN"><header class="post-header">
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/my-avatar.png">
+      <meta itemprop="name" content="schip">
+      <meta itemprop="description" content="宁静致远 厚德载物 天道酬勤">
+    </span>
 
-<h1 class="post-title" itemprop="name headline">分类
-</h1>
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="阿远的小窝">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          手工构造Zone.Identifier文件
+        </h1>
 
-<div class="post-meta-container">
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2022-05-07 13:37:56 / 修改时间：15:04:50" itemprop="dateCreated datePublished" datetime="2022-05-07T13:37:56+08:00">2022-05-07</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%9A%8F%E7%AC%94/" itemprop="url" rel="index"><span itemprop="name">随笔</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
 </div>
 
-</header>
+        </div>
+      </header>
 
-      
-      
-      <div class="post-body"><div class="category-all-page">
-  <div class="category-all-title">
-    目前共计 4 个分类
-  </div>
-  <div class="category-all">
-    <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BC%80%E5%8F%91/">开发</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95/">渗透测试</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E9%80%86%E5%90%91/">逆向</a><span class="category-list-count">2</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E9%9A%8F%E7%AC%94/">随笔</a><span class="category-list-count">2</span></li></ul>
-  </div>
-</div>
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="Zone-Identifier文件是什么"><a href="#Zone-Identifier文件是什么" class="headerlink" title="Zone.Identifier文件是什么"></a>Zone.Identifier文件是什么</h2><blockquote>
+<p>从网上下载的文件始终可能包已含损坏数据或恶意软件。 因此，网络浏览器在NTFS ADS（备用数据流）区域中存储有关下载文件位置的信息。 该信息称为“zone.identifier（区域标识符信息）”，由安全程序使用。</p>
+</blockquote>
+<p>（摘自<a target="_blank" rel="noopener" href="https://www.bandisoft.com/bandizip/help/zone-identifier/">https://www.bandisoft.com/bandizip/help/zone-identifier/</a>）</p>
+<h2 id="手工构造Zone-Identifier的步骤"><a href="#手工构造Zone-Identifier的步骤" class="headerlink" title="手工构造Zone.Identifier的步骤"></a>手工构造Zone.Identifier的步骤</h2><p>因为完整的文件名是<code>sample.exe: Zone.Identifier</code> ，文件中存在<code>:</code> （冒号）导致无法直接创建文件，所以需要powershell创建：</p>
+<figure class="highlight plain"><figcaption><span>Text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">set-content -path .\sample.exe -stream Zone.Identifier</span><br></pre></td></tr></table></figure>
+<p>然后在提示<code>Value[0]</code>中输入：<code>[ZoneTransfer]</code> </p>
+<p>在<code>Value[1]</code>中输入：ZoneId=3</p>
+<p>在<code>Value[2]</code>中直接回车。</p>
+<p>整体效果如下：</p>
+<figure class="highlight plain"><figcaption><span>Text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">PS C:\Users\admin\Downloads&gt; set-content -path .\sample.exe -stream Zone.Identifier</span><br><span class="line"></span><br><span class="line">位于命令管道位置 1 的 cmdlet Set-Content</span><br><span class="line">请为以下参数提供值:</span><br><span class="line">Value[0]: [ZoneTransfer]</span><br><span class="line">Value[1]: ZoneId&#x3D;3</span><br><span class="line">Value[2]:</span><br><span class="line">PS C:\Users\admin\Downloads&gt;</span><br></pre></td></tr></table></figure>
+<p>使用以下命令确认生效：<code>get-item -path .\sample.exe -stream *</code> ，例如：</p>
+<figure class="highlight plain"><figcaption><span>Text</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">PS C:\Users\admin\Downloads&gt; get-item -path .\sample.exe -stream *</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">PSPath        : Microsoft.PowerShell.Core\FileSystem::C:\Users\admin\Downloads\sample.exe::$DATA</span><br><span class="line">PSParentPath  : Microsoft.PowerShell.Core\FileSystem::C:\Users\admin\Downloads</span><br><span class="line">PSChildName   : sample.exe::$DATA</span><br><span class="line">PSDrive       : C</span><br><span class="line">PSProvider    : Microsoft.PowerShell.Core\FileSystem</span><br><span class="line">PSIsContainer : False</span><br><span class="line">FileName      : C:\Users\admin\Downloads\sample.exe</span><br><span class="line">Stream        : :$DATA</span><br><span class="line">Length        : 1554195</span><br><span class="line"></span><br><span class="line">PSPath        : Microsoft.PowerShell.Core\FileSystem::C:\Users\admin\Downloads\sample.exe:Zone.Identifier</span><br><span class="line">PSParentPath  : Microsoft.PowerShell.Core\FileSystem::C:\Users\admin\Downloads</span><br><span class="line">PSChildName   : sample.exe:Zone.Identifier</span><br><span class="line">PSDrive       : C</span><br><span class="line">PSProvider    : Microsoft.PowerShell.Core\FileSystem</span><br><span class="line">PSIsContainer : False</span><br><span class="line">FileName      : C:\Users\admin\Downloads\sample.exe</span><br><span class="line">Stream        : Zone.Identifier</span><br><span class="line">Length        : 26</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>创建<code>Zone.Identifier</code> 文件前后效果对比：</p>
+<p><img src="/2022/05/07/%E9%9A%8F%E7%AC%94/%E6%89%8B%E5%B7%A5%E6%9E%84%E9%80%A0Zone-Identifier%E6%96%87%E4%BB%B6/pqDx4PF8d4VnuqjokFSJM09yXy2rWzMeQWStyo9fS6k.png" alt="image"></p>
 
-      </div>
-      
-      
-      
     </div>
 
     
     
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/04/26/%E5%BC%80%E5%8F%91/Windows%E7%BC%96%E8%AF%91OpenSSL/" rel="prev" title="Windows编译OpenSSL">
+                  <i class="fa fa-chevron-left"></i> Windows编译OpenSSL
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/05/07/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95/ICMP%E9%9A%A7%E9%81%93%E5%8E%9F%E7%90%86%E4%B8%8E%E6%A3%80%E6%B5%8B/" rel="next" title="ICMP隧道原理与检测">
+                  ICMP隧道原理与检测 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
 
 
 
